@@ -1,0 +1,6 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {initialBrief,manualKnowledge,templateLesson,lessonSchema,checkLesson} from '../lib/lesson.ts';
+test('15 to 180 minute templates have exact timing and complete goal/knowledge coverage',()=>{for(let minutes=15;minutes<=180;minutes++){const b={...initialBrief,minutes};const k=manualKnowledge(b);const l=templateLesson(b,k);assert.ok(lessonSchema.safeParse(l).success);assert.equal(l.activities.reduce((s,a)=>s+a.minutes,0),minutes);assert.equal(checkLesson(l,b,k).filter(x=>x.severity==='error').length,0)}});
+test('checks reject wrong times and references outside confirmed knowledge',()=>{const k=manualKnowledge(initialBrief),l=templateLesson(initialBrief,k);l.activities[0].minutes+=1;l.activities[0].knowledgeIds.push('invented');l.exercises=[];const issues=checkLesson(l,initialBrief,k);assert.ok(issues.some(x=>x.text.includes('不一致')));assert.ok(issues.some(x=>x.text.includes('invented')));assert.ok(issues.some(x=>x.text.includes('没有检查题')))});
+test('missing graph verification is visible',()=>{const k=manualKnowledge(initialBrief);assert.ok(checkLesson(templateLesson(initialBrief,k),initialBrief,k).some(x=>x.text.includes('未通过图谱核验')))});

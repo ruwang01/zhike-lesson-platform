@@ -1,0 +1,19 @@
+# Set User, WorkingDirectory and ExecStart to the actual unprivileged service user/venv.
+[Unit]
+Description=Zhike ChatTTS speech API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=chattts
+WorkingDirectory=/opt/zhike-chattts
+EnvironmentFile=/etc/zhike-chattts.env
+ExecStart=/opt/zhike-chattts/venv/bin/uvicorn app:app --host 127.0.0.1 --port 8000 --workers 1
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

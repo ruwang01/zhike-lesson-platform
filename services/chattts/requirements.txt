@@ -1,0 +1,5 @@
+# Install ChatTTS and its matching torch dependencies following the official project.
+ChatTTS
+fastapi
+uvicorn[standard]
+numpy
