@@ -17,11 +17,20 @@ export async function POST(req:Request){try{const b=await body(req);const parsed
  const example={title:'课程标题',goals:[{id:'g1',text:'可观察的学习成果',knowledgeIds:['输入中的知识id']}],activities:[{id:'a1',title:'环节标题',minutes:5,goalIds:['g1'],knowledgeIds:['输入中的知识id'],teacher:'具体教师指令与示范语言',students:'具体学生行动',grouping:'分组方式',output:'可观察成果',assessment:'评价方法'}],materials:[{title:'角色卡A',content:'可直接发给学生的完整信息，与B卡不同'}],exercises:[{question:'完整题目',answer:'参考答案或具体评分标准',goalIds:['g1'],knowledgeIds:['输入中的知识id']}],board:'具体板书内容',homework:'基础与拓展任务',notes:'待教师核验事项'};
  const prompt=lessonPrompt(brief,knowledge,example);
  const messages:{role:string;content:string}[]=[{role:'system',content:prompt},{role:'user',content:JSON.stringify({brief:{...brief,terms:knowledge.map(k=>k.name).join('、')},knowledge:groundedBlocks(knowledge),previous:previous?.success?previous.data:null,revision})}];
+ let candidate:ReturnType<typeof lessonSchema.parse>|null=null;
+ let warnings:string[]=[];
+ const finish=()=>{if(!candidate)throw new AppError('模型未返回完整教案，请重试。现有草稿已保留。',502);const lesson={...candidate,notes:candidate.notes+(warnings.length?'\n\n【待审核问题】\n'+warnings.map(x=>'• '+x).join('\n'):'')};return json({lesson,knowledge,source:'model',createdAt:new Date().toISOString(),promptVersion:PROMPT_VERSION,model:modelInfo().name,reviewed:false,validationWarnings:warnings})};
  for(let attempt=0;attempt<2;attempt++){
+ try{
  await quota(s.id);
- const raw=await modelRequest(messages);const l=lessonSchema.safeParse(raw);if(!l.success)throw new AppError('模型输出结构不完整，未覆盖现有草稿。',502);
- const errors=[...checkLesson(l.data,brief,knowledge).filter(x=>x.severity==='error'),...checkEvidenceBoundary(l.data,knowledge).map(text=>({text,severity:'error' as const}))];if(errors.length){if(attempt===0){messages.push({role:'assistant',content:JSON.stringify(l.data)},{role:'user',content:'修复以下程序检查错误后返回完整 JSON。不要只返回局部。注意同名但不同类型的知识是不同节点，必须使用各自id。'+errors.map(x=>x.text).join(' ')});continue}throw new AppError('生成教案未通过一致性检查：'+errors.slice(0,3).map(x=>x.text).join(' '),502)}
- return json({lesson:l.data,knowledge,source:'model',createdAt:new Date().toISOString(),promptVersion:PROMPT_VERSION,model:modelInfo().name,reviewed:false});
+ const raw=await modelRequest(messages),l=lessonSchema.safeParse(raw);
+ if(!l.success)throw new AppError('模型输出结构不完整。',502);
+ candidate=l.data;
+ warnings=[...new Set([...checkLesson(l.data,brief,knowledge).filter(x=>x.severity==='error').map(x=>x.text),...checkEvidenceBoundary(l.data,knowledge)])];
+ if(!warnings.length)return finish();
+ if(attempt===0){messages.push({role:'assistant',content:JSON.stringify(l.data)},{role:'user',content:'请修订完整教案 JSON，优先修复以下问题。不得新增或伪造图谱知识，knowledgeIds 必须来自证据包，goalIds 必须来自本教案目标。没有语法证据时，仅安排原句理解、情境选择和交流任务，不总结语法规则。活动时间合计必须等于 '+brief.minutes+' 分钟。待修复：'+warnings.join(' ')});continue}
+ return finish();
+ }catch(e){if(candidate){warnings.push('自动修订未完成，已保留上一次完整生成结果。请按下方问题人工调整，或稍后使用“修订”。');return finish()}throw e}
  }
- throw new AppError('生成教案失败，请重试。',502);
+ return finish();
  }catch(e){return failure(e)}}
