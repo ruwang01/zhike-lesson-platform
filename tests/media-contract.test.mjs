@@ -1,4 +1,4 @@
-import {build} from '../node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild/lib/main.js';
+import {build} from 'esbuild';
 import {test} from 'node:test';import assert from 'node:assert/strict';
 const bundle=await build({entryPoints:['lib/media-provider.ts'],bundle:true,write:false,platform:'node',format:'esm',plugins:[{name:'test-config',setup(b){b.onResolve({filter:/^\.\/server$/},()=>({path:'server',namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:`export const config=()=>globalThis.__mediaConfig;export class AppError extends Error{constructor(message,status=400){super(message);this.status=status}}`,loader:'js'}))}}]});
 const provider=await import('data:text/javascript;base64,'+Buffer.from(bundle.outputFiles[0].text).toString('base64'));

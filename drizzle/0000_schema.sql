@@ -1,3 +1,11 @@
+CREATE TABLE `generation_usage` (
+	`key` text PRIMARY KEY NOT NULL,
+	`day` text NOT NULL,
+	`subject` text NOT NULL,
+	`count` integer DEFAULT 0 NOT NULL
+);
+
+--> statement-breakpoint
 CREATE TABLE `auth_account` (
 	`id` text PRIMARY KEY NOT NULL,
 	`account_id` text NOT NULL,
@@ -16,7 +24,8 @@ CREATE TABLE `auth_account` (
 );
 --> statement-breakpoint
 CREATE TABLE `auth_rate_limit` (
-	`key` text PRIMARY KEY NOT NULL,
+	`id` text PRIMARY KEY NOT NULL,
+	`key` text NOT NULL,
 	`count` integer NOT NULL,
 	`last_request` integer NOT NULL
 );
@@ -73,3 +82,40 @@ CREATE TABLE `lesson_workspaces` (
 	`updated_at` integer NOT NULL,
 	FOREIGN KEY (`owner_id`) REFERENCES `auth_user`(`id`) ON UPDATE no action ON DELETE cascade
 );
+
+--> statement-breakpoint
+CREATE TABLE `site_daily_usage` (
+	`key` text PRIMARY KEY NOT NULL,
+	`day` text NOT NULL,
+	`user_id` text NOT NULL,
+	`kind` text NOT NULL,
+	`count` integer DEFAULT 0 NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE `admin_setup_lock` (
+	`key` text PRIMARY KEY NOT NULL,
+	`created_at` integer NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE `site_accounts` (
+	`user_id` text PRIMARY KEY NOT NULL,
+	`username` text NOT NULL,
+	`role` text DEFAULT 'user' NOT NULL,
+	`enabled` integer DEFAULT true NOT NULL,
+	`created_at` integer NOT NULL,
+	FOREIGN KEY (`user_id`) REFERENCES `auth_user`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `site_accounts_username_unique` ON `site_accounts` (`username`);--> statement-breakpoint
+CREATE TABLE `usage_events` (
+	`id` text PRIMARY KEY NOT NULL,
+	`user_id` text NOT NULL,
+	`kind` text NOT NULL,
+	`status` text NOT NULL,
+	`model` text NOT NULL,
+	`created_at` integer NOT NULL,
+	`finished_at` integer
+);
+
+--> statement-breakpoint
+CREATE UNIQUE INDEX `auth_rate_limit_key_unique` ON `auth_rate_limit` (`key`);

@@ -1,9 +1,9 @@
 // Local-only integration test. Disposable users and data are cleaned up in finally.
 import {DatabaseSync} from 'node:sqlite';import {readdirSync} from 'node:fs';import {hashPassword} from 'better-auth/crypto';import {initialBrief,manualKnowledge,templateLesson} from '../lib/lesson';import assert from 'node:assert/strict';
-const dir='.wrangler/state/v3/d1/miniflare-D1DatabaseObject/',db=new DatabaseSync(dir+readdirSync(dir).find(f=>f.endsWith('.sqlite')&&f!=='metadata.sqlite'));
-const base='http://127.0.0.1:5173',prefix='qa'+Date.now(),password=crypto.randomUUID()+'Ab1!';
+const db=new DatabaseSync(process.env.TEST_DATABASE_PATH!);
+const base='http://127.0.0.1:5174',prefix='qa'+Date.now(),password=crypto.randomUUID()+'Ab1!';
 let requestNumber=0;
-async function call(path:string,data?:unknown,cookie=''){const r=await fetch(base+path,{method:data?'POST':'GET',headers:{'CF-Connecting-IP':'198.51.100.'+(++requestNumber),Origin:base,'Content-Type':'application/json',Cookie:cookie},body:data?JSON.stringify(data):undefined});return {r,d:await r.json() as any}}
+async function call(path:string,data?:unknown,cookie=''){const r=await fetch(base+path,{method:data?'POST':'GET',headers:{'X-Forwarded-For':'198.51.100.'+(++requestNumber),Origin:base,'Content-Type':'application/json',Cookie:cookie},body:data?JSON.stringify(data):undefined});return {r,d:await r.json() as any}}
 async function login(username:string,pw=password){const x=await call('/api/account/login',{username,password:pw});assert.equal(x.r.status,200,JSON.stringify(x.d));return x.r.headers.getSetCookie().map(c=>c.split(';')[0]).join('; ')}
 const ids=[prefix+'a',prefix+'b',prefix+'admin'];let workspace='';
 try{
@@ -19,6 +19,6 @@ try{
  assert.equal((await call('/api/admin/accounts',{action:'toggle',id:createdId,enabled:false},admin)).r.status,200);assert.equal((await call('/api/workspaces',undefined,createdCookie)).r.status,401);assert.equal((await call('/api/account/login',{username:prefix+'created',password})).r.status,401);await call('/api/admin/accounts',{action:'toggle',id:createdId,enabled:true},admin);
  const newPw=crypto.randomUUID()+'Cc2!';assert.equal((await call('/api/admin/accounts',{action:'reset',id:createdId,password:newPw},admin)).r.status,200);assert.equal((await call('/api/account/login',{username:prefix+'created',password})).r.status,401);await login(prefix+'created',newPw);
  db.prepare('INSERT INTO usage_events(id,user_id,kind,status,model,created_at) VALUES(?,?,?,?,?,?)').run(prefix,ids[0],'image','success','fixture-only',Date.now());const stats=await call('/api/admin/usage',undefined,admin);assert.equal(stats.r.status,200);assert.ok(stats.d.recent.some((x:any)=>x.username===ids[0]&&x.model==='fixture-only'));
- assert.equal((await call('/api/auth/sign-up/email',{email:'fixture@example.invalid',password,name:'fixture'})).r.status,403);await call('/api/auth/sign-out',{},a);assert.equal((await call('/api/workspaces',undefined,a)).r.status,401);
+ assert.equal((await call('/api/auth/sign-up/email',{email:'fixture@example.invalid',password,name:'fixture'})).r.status,403);assert.equal((await call('/api/auth/sign-out',{},a)).r.status,200);assert.equal((await call('/api/workspaces',undefined,a)).r.status,401);
  console.log('PASS: unverified assigned-account login, cloud isolation, admin access control, create/disable/reset, session revocation, usage reporting, missing-media guards and blocked public signup.');
 }finally{if(workspace){db.prepare('DELETE FROM lesson_revisions WHERE workspace_id=?').run(workspace);db.prepare('DELETE FROM lesson_workspaces WHERE id=?').run(workspace)}for(const id of ids){db.prepare('DELETE FROM usage_events WHERE user_id=?').run(id);db.prepare('DELETE FROM site_daily_usage WHERE user_id=?').run(id);db.prepare('DELETE FROM auth_session WHERE user_id=?').run(id);db.prepare('DELETE FROM auth_account WHERE user_id=?').run(id);db.prepare('DELETE FROM site_accounts WHERE user_id=?').run(id);db.prepare('DELETE FROM auth_user WHERE id=?').run(id)}db.close()}

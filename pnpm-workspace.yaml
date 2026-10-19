@@ -1,8 +1,5 @@
 allowBuilds:
   esbuild: true
-  sharp: true
-  unrs-resolver: true
-  workerd: true
 minimumReleaseAgeExclude:
   - '@better-auth/core@1.7.11'
   - '@better-auth/drizzle-adapter@1.7.11'
