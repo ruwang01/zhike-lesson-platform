@@ -5,7 +5,8 @@ import { Network,ArrowRight,ArrowLeft,Check,Download,Plus,X,Clock,Users,FileText
 import { initialBrief,standardNames,manualKnowledge,splitTerms,templateLesson,checkLesson,placeholderIssues,withBriefDefaults,lessonSchema,briefSchema,objectiveDomains,courseTypes,defaultTemplateConfig,graphTermsFromGroups,getKnowledgeGroups,pruneKnowledgeToBrief,knowledgeInBriefScope,freshBriefForNewLesson,augmentBriefWithStepTerms,graphSearchStandard,type Brief,type Knowledge,type Draft,type Lesson,type TemplateConfig,type KnowledgeGroups } from '@/lib/lesson';
 import {exampleChoices,formatAudience,formatTeachingContext,knowledgeSelection} from '@/lib/evidence';
 import {draftSchema} from '@/lib/workspace';
-import {emptyWorkspaceForNewLesson,parseStoredHistory,parseStoredKnowledge,readWorkspaceSnapshot,restoreBriefFromStorage,writeWorkspaceSnapshot,type WorkspaceFlow} from '@/lib/workspace-storage';
+import {emptyWorkspaceForNewLesson,parseStoredHistory,parseStoredKnowledge,readWorkspaceSnapshot,restoreBriefFromStorage,parseStoredDraft,hasWorkspaceProgress,workspaceResumeStep,type WorkspaceFlow} from '@/lib/workspace-storage';
+import {useWorkspaceAutosave} from '@/lib/use-workspace-autosave';
 import { exportWord,download } from '@/lib/export';
 import {KnowledgeItem} from '@/components/studio/knowledge-item';
 import {LessonDesignStep} from '@/components/studio/lesson-editor/lesson-design-step';
@@ -23,7 +24,7 @@ const steps=['教学需求','确认知识','教案设计','检查与导出'];
 async function api(path:string,data?:unknown){const r=await fetch(path,{method:data?'POST':'GET',headers:data?{'Content-Type':'application/json'}:undefined,body:data?JSON.stringify(data):undefined});const d=await r.json() as any;if(!r.ok)throw Error(d.error||'请求失败，请稍后重试。');return d}
 export default function Home({initialModule,initialEntry}:{initialModule:Module;initialEntry:'new'|'resume'|null}){
  const router=useRouter();
- const [step,setStep]=useState(0),[brief,setBrief]=useState<Brief>(initialBrief),[knowledge,setKnowledge]=useState<Knowledge[]>([]),[draft,setDraft]=useState<Draft|null>(null),[tab,setTab]=useState(0),[busy,setBusy]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState(''),[settings,setSettings]=useState(false),[info,setInfo]=useState(false),[username,setUsername]=useState(''),[password,setPassword]=useState(''),[status,setStatus]=useState({connected:false,username:'',modelConfigured:false}),[revision,setRevision]=useState(''),[newTerm,setNewTerm]=useState(''),[ready,setReady]=useState(false),[saved,setSaved]=useState(false),[history,setHistory]=useState<Draft[]>([]);
+ const [step,setStep]=useState(0),[brief,setBrief]=useState<Brief>(initialBrief),[knowledge,setKnowledge]=useState<Knowledge[]>([]),[draft,setDraft]=useState<Draft|null>(null),[tab,setTab]=useState(0),[busy,setBusy]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState(''),[settings,setSettings]=useState(false),[info,setInfo]=useState(false),[username,setUsername]=useState(''),[password,setPassword]=useState(''),[status,setStatus]=useState({connected:false,username:'',modelConfigured:false}),[revision,setRevision]=useState(''),[newTerm,setNewTerm]=useState(''),[ready,setReady]=useState(false),[history,setHistory]=useState<Draft[]>([]);
  const [cloudId,setCloudId]=useState<string|null>(null),[accountRevision,setAccountRevision]=useState(0);
  /** 窄屏（侧栏隐藏）时用弹窗承载「教案结构偏好」。宽屏侧栏里已有同一个面板。 */
  const [templateOpen,setTemplateOpen]=useState(false);
@@ -34,39 +35,54 @@ export default function Home({initialModule,initialEntry}:{initialModule:Module;
  /** 教案设计模块的入口态：null = 展示入口选择页；'new'/'resume' = 已进入流程。 */
  const [entryChoice,setEntryChoice]=useState<'new'|'resume'|null>(initialEntry);
  const [module,setModule]=useState<Module>(initialModule);
- function navigate(m:Module){setModule(m);if(m==='knowledge')setStep(1);if(m==='materials'){setStep(2);setTab(1)}if(m==='design'){setEntryChoice(null);router.replace('/?m=design')}}
+ const [workspaceActive,setWorkspaceActive]=useState(false);
+ const active=workspaceActive||!!draft||knowledge.length>0;
+ const {saved,flush:flushWorkspace}=useWorkspaceAutosave({brief,knowledge,draft,history,flow:workspaceFlow(),active,step,tab,knowledgeVerifyVisible},ready);
+ function navigate(m:Module){flushWorkspace();setModule(m);if(m==='knowledge')setStep(1);if(m==='materials'){setStep(2);setTab(1)}if(m==='design'){setEntryChoice(null);router.replace('/?m=design')}}
  function workspaceFlow():WorkspaceFlow{return entryChoice==='new'&&step===0&&!draft?'new':'working'}
- function persistWorkspace(overrides?:Partial<{brief:Brief;knowledge:Knowledge[];draft:Draft|null;history:Draft[];flow:WorkspaceFlow}>){writeWorkspaceSnapshot({brief:overrides?.brief??brief,knowledge:overrides?.knowledge??knowledge,draft:overrides?.draft??draft,history:overrides?.history??history,flow:overrides?.flow??workspaceFlow()})}
- function beginNewLesson(noticeText='已开始新的教案。'){const snap=emptyWorkspaceForNewLesson(history);setBrief(snap.brief);setKnowledge([]);setDraft(null);setStep(0);setCloudId(null);setEntryChoice('new');setModule('design');setError('');setNotice(noticeText);setKnowledgeVerifyVisible(false);setPendingKnowledgeSearch(false);setNewTerm('');setRevision('');setWizardEpoch(n=>n+1);writeWorkspaceSnapshot(snap);router.replace('/?m=design&entry=new')}
+ function beginNewLesson(noticeText='已开始新的教案。'){const snap={...emptyWorkspaceForNewLesson(history),active:true};setWorkspaceActive(true);setBrief(snap.brief);setKnowledge([]);setDraft(null);setStep(0);setCloudId(null);setEntryChoice('new');setModule('design');setError('');setNotice(noticeText);setKnowledgeVerifyVisible(false);setPendingKnowledgeSearch(false);setNewTerm('');setRevision('');setWizardEpoch(n=>n+1);flushWorkspace(snap);router.replace('/?m=design&entry=new')}
  function startNewLesson(){beginNewLesson()}
  /** 进入教案设计：默认先展示入口选择页。 */
- function openDesignEntry(){setEntryChoice(null);setModule('design');setError('');}
+ function openDesignEntry(){flushWorkspace();setEntryChoice(null);setModule('design');setError('');}
  /** 直接进入教案设计流程（跳过入口页），用于历史记录 / 材料页的深链。 */
  function openDesignFlow(at?:number){setEntryChoice('resume');setModule('design');if(at!==undefined)setStep(at);router.replace('/?m=design&entry=resume');}
  const importRef=useRef<HTMLInputElement>(null);
  const refresh=()=>api('/api/status').then(setStatus).catch(()=>{});
- useEffect(()=>{refresh();if(initialModule==='knowledge')setStep(1);if(initialModule==='materials'){setStep(2);setTab(1)}try{const stored=readWorkspaceSnapshot();const storedHistory=stored?parseStoredHistory(stored.history):[];if(storedHistory.length)setHistory(storedHistory);if(initialEntry==='new'){setEntryChoice('new');if(stored?.flow==='new'){const restoredBrief=restoreBriefFromStorage(stored.brief)??freshBriefForNewLesson();setBrief(restoredBrief);setKnowledge(parseStoredKnowledge(stored.knowledge,restoredBrief));setDraft(null);setStep(0);setKnowledgeVerifyVisible(false)}else{const snap=emptyWorkspaceForNewLesson(storedHistory);setBrief(snap.brief);setKnowledge([]);setDraft(null);setStep(0);setKnowledgeVerifyVisible(false);setWizardEpoch(n=>n+1);writeWorkspaceSnapshot(snap)}}else if(stored){const restoredBrief=restoreBriefFromStorage(stored.brief);if(restoredBrief){setBrief(restoredBrief);setKnowledge(parseStoredKnowledge(stored.knowledge,restoredBrief))}if(stored.draft&&draftSchema.safeParse(stored.draft).success)setDraft(draftSchema.parse(stored.draft));if(initialEntry==='resume'&&stored.draft)setStep(2)}}catch{}setReady(true)},[]);
- useEffect(()=>{if(!ready)return;try{persistWorkspace();setSaved(true)}catch{setSaved(false)}},[ready,brief,knowledge,draft,history,entryChoice,step]);
+ useEffect(()=>{
+  refresh();
+  const stored=readWorkspaceSnapshot();
+  if(stored){
+   setHistory(parseStoredHistory(stored.history));
+   const restoredBrief=restoreBriefFromStorage(stored.brief);
+   const restoredDraft=parseStoredDraft(stored.draft);
+   if(restoredBrief){setBrief(restoredBrief);setKnowledge(parseStoredKnowledge(stored.knowledge,restoredBrief))}
+   setDraft(restoredDraft);
+   setWorkspaceActive(hasWorkspaceProgress(stored));
+   setTab(Number.isInteger(stored.tab)?Math.max(0,Math.min(4,stored.tab!)):0);
+   setKnowledgeVerifyVisible(!!stored.knowledgeVerifyVisible);
+   setStep(workspaceResumeStep({...stored,draft:restoredDraft}));
+  }
+  if(initialModule==='knowledge')setStep(1);
+  if(initialModule==='materials'){setStep(2);setTab(1)}
+  setReady(true);
+ },[]);
  function briefHasSpecifiedKnowledge(b:Brief){const g=b.knowledgeGroups;return !!(g&&Object.values(g).some(v=>typeof v==='string'&&v.trim()))}
  useEffect(()=>{if(step!==1)return;if(briefHasSpecifiedKnowledge(brief))setKnowledgeVerifyVisible(true)},[step,brief.knowledgeGroups]);
- useEffect(()=>{if(!ready||step!==1)return;setKnowledge(k=>{const pruned=pruneKnowledgeToBrief(k,brief);return pruned.length===k.length?k:pruned})},[ready,step,brief.knowledgeGroups,brief.terms]);
  useEffect(()=>{if(!pendingKnowledgeSearch||step!==1)return;setPendingKnowledgeSearch(false);if(!splitTerms(brief.terms).length)return;void search()},[pendingKnowledgeSearch,brief.terms,step]);
  function revealKnowledgeVerify(autoSearch=false){setKnowledgeVerifyVisible(true);if(autoSearch)setPendingKnowledgeSearch(true)}
- function update<K extends keyof Brief>(key:K,value:Brief[K]){setBrief(b=>{const next={...b,[key]:value};
+ function update<K extends keyof Brief>(key:K,value:Brief[K]){setWorkspaceActive(true);setBrief(b=>{const next={...b,[key]:value};
   // 等级体系（standard）改了，图谱等级就不再匹配，必须重新核验。
   // 学习者等级现在藏在教学对象里（audience.level），单独变化时同样需要重新核验。
   const levelChanged=key==='audience'&&(b.audience?.level??'')!==(value as Brief['audience'])?.level;
   if(knowledge.some(k=>k.verified)&&(key==='standard'||levelChanged))setKnowledge(k=>k.map(x=>({...x,verified:false,levels:[],detail:'等级体系已修改，请重新核验。'})));
   return next;});}
  function updateKnowledgeGroups(patch:Partial<KnowledgeGroups>){
-  let nextBrief!:Brief;
-  setBrief(b=>{
-   const merged={...getKnowledgeGroups(b),...patch};
-   for(const k of ['characters','vocabulary','grammar','culture','other'] as const){const v=merged[k]?.trim();if(v)merged[k]=v;else delete merged[k]}
-   const knowledgeGroups=Object.keys(merged).length?merged:undefined;
-   nextBrief={...b,knowledgeGroups,terms:graphTermsFromGroups(getKnowledgeGroups({...b,knowledgeGroups,terms:b.terms}))};
-   return nextBrief;
-  });
+  const merged={...getKnowledgeGroups(brief),...patch};
+  for(const k of ['characters','vocabulary','grammar','culture','other'] as const){const v=merged[k]?.trim();if(v)merged[k]=v;else delete merged[k]}
+  const knowledgeGroups=Object.keys(merged).length?merged:undefined;
+  const nextBrief={...brief,knowledgeGroups,terms:graphTermsFromGroups(getKnowledgeGroups({...brief,knowledgeGroups,terms:brief.terms}))};
+  setBrief(nextBrief);
+  setWorkspaceActive(true);
   setKnowledge(old=>pruneKnowledgeToBrief(old,nextBrief));
  }
  function absorbStepGraphSearch(filtered:Knowledge[],terms:string[],stepKey:'characters'|'vocabulary'|'grammar'|'culture'|'other'){
@@ -115,10 +131,10 @@ export default function Home({initialModule,initialEntry}:{initialModule:Module;
  const core=scopedKnowledge.filter(k=>k.role==='核心').length;
  const paperMode=module==='design'&&(step===2||step===3)&&!!draft;
  const durationSlices=draft?draft.lesson.activities.map(a=>({name:a.title,minutes:a.minutes})):[];
- return <div className={'app-shell'+(paperMode?' paper-mode':'')+(module==='dashboard'?' dashboard-celadon-theme':'')}><aside className="sidebar"><a href="/" className="brand"><span className="brand-mark"><TongueIcon size={26}/></span><span>智课<span className="brand-en">ZHÌKE STUDIO</span></span></a><ModuleNav active={module} variant={(module==='dashboard'||module==='account')?'dashboard':'full'}/><div className="sidebar-bottom"><span className="save-status"><span className={saved?'green-dot':'tiny-dot'}/>{saved?'草稿已保存':'草稿未保存'}</span><div className="profile"><span>师</span><div>我的备课空间<small>草稿仅保存在此浏览器</small></div></div></div></aside>
+ return <div className={'app-shell'+(paperMode?' paper-mode':'')+(module==='dashboard'?' dashboard-celadon-theme':'')}><aside className="sidebar"><a href="/" className="brand"><span className="brand-mark"><TongueIcon size={26}/></span><span>智课<span className="brand-en">ZHÌKE STUDIO</span></span></a><ModuleNav active={module} variant={(module==='dashboard'||module==='account')?'dashboard':'full'}/><div className="sidebar-bottom"><span className="save-status"><span className={saved?'green-dot':'tiny-dot'}/>{saved?'草稿已保存':'草稿尚未保存'}</span><div className="profile"><span>师</span><div>我的备课空间<small>草稿仅保存在此浏览器</small></div></div></div></aside>
  <div className="main-shell"><header className="topbar"><div>工作空间 <span>/</span> <strong>{moduleTitles[module]}</strong></div><button className="template-mobile-trigger" onClick={()=>setTemplateOpen(true)}><LayoutTemplate size={15}/>教案结构偏好</button></header>
  <main><div className={'page-heading'+(module==='dashboard'?' hero':'')+(module==='design'&&!entryChoice?' entry-hero':'')}><div><div className="eyebrow">LESSON DESIGN WORKSPACE</div><h1>{module==='dashboard'?'把知识，变成一堂好课。':moduleTitles[module]}</h1><p>从教学需求出发，让每一个目标、活动与评价都有据可循。</p>{module==='design'&&!entryChoice&&<button className="connection-pill entry-pill" onClick={()=>setSettings(true)}><span className={status.connected?'green-dot':'amber-dot'}/>{status.connected?'图谱已连接 · '+status.username:'连接知识图谱'}<ChevronDown size={14}/></button>}</div>{module!=='dashboard'&&!(module==='design'&&!entryChoice)&&<button className="connection-pill" onClick={()=>setSettings(true)}><span className={status.connected?'green-dot':'amber-dot'}/>{status.connected?'图谱已连接 · '+status.username:'连接知识图谱'}<ChevronDown size={14}/></button>}</div>
- {module==='design'&&!entryChoice&&<LessonEntry hasDraft={!!draft} lastDraftTitle={draft?.lesson.title} onNew={()=>beginNewLesson()} onResume={()=>{if(!draft){setError('暂无未完成的草稿，请先新建一份教案。');return}setEntryChoice('resume');setStep(2);router.replace('/?m=design&entry=resume')}} onHistory={()=>{setModule('history');router.push('/?m=history')}}/>}
+ {module==='design'&&!entryChoice&&<LessonEntry hasDraft={active} lastDraftTitle={draft?.lesson.title||brief.topic} onNew={()=>beginNewLesson()} onResume={()=>{if(!active){setError('暂无未完成的草稿，请先新建一份教案。');return}flushWorkspace();setEntryChoice('resume');setStep(draft?Math.max(2,step):Math.min(1,step));router.replace('/?m=design&entry=resume')}} onHistory={()=>{setModule('history');router.push('/?m=history')}}/>}
  {module==='design'&&entryChoice&&<StepRail steps={steps} active={step} subtitles={['设定课堂与学习成果','选择本课核心内容','组织活动与配套任务','核对目标，形成教案包']} disabled={i=>i>1&&!draft||!!busy} onSelect={i=>{if(i===1&&step===0)confirmBrief();else setStep(i)}}/>}
  {error&&<div className="message error" role="alert"><AlertCircle size={18}/><span>{error}</span><button aria-label="关闭错误" onClick={()=>setError('')}><X size={16}/></button></div>}{notice&&<div className="message success" role="status"><CheckCircle2 size={18}/>{notice}</div>}{busy&&<div className="message progress" role="status"><LoaderCircle className="spin" size={18}/>{busy}，请稍候…</div>}
  {module==='dashboard'&&<BentoGrid onNavigate={navigate} onNew={startNewLesson} connected={status.connected} onOpenInfo={()=>setInfo(true)}/>}
@@ -134,6 +150,6 @@ export default function Home({initialModule,initialEntry}:{initialModule:Module;
  <input hidden ref={importRef} type="file" accept=".json,application/json" onChange={e=>{const f=e.target.files?.[0];if(f)importDraft(f);e.target.value=''}}/>
  {settings&&<div className="modal-backdrop" onClick={()=>setSettings(false)}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="settings-title" onClick={e=>e.stopPropagation()}><button className="modal-close" aria-label="关闭设置" onClick={()=>setSettings(false)}><X/></button><span className="section-icon"><Link2/></span><h2 id="settings-title">连接你的知识图谱</h2><p>使用国际中文教育知识图谱平台已审核通过的账号。每位教师仅查询自己有权访问的数据。</p>{status.connected?<><div className="message success"><CheckCircle2 size={18}/>已连接：{status.username}</div><button className="secondary" disabled={!!busy} onClick={()=>run('正在断开连接',async()=>{await api('/api/kg/logout',{});await refresh();setKnowledge(k=>k.map(x=>({...x,verified:false})));setNotice('已断开连接。当前草稿仍保存在本机。')})}>断开图谱连接</button></>:<form onSubmit={e=>{e.preventDefault();run('正在连接知识图谱',async()=>{await api('/api/kg/login',{username,password});setPassword('');await refresh();setSettings(false);setNotice('已连接知识图谱，可以核验本课知识。')})}}><label className="field">图谱账号<input autoComplete="username" required value={username} onChange={e=>setUsername(e.target.value)}/></label><label className="field">密码<input type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)}/></label><p className="helper">点击连接后，账号密码经本网站后端发送至 kg.chineseplus.net 认证。密码不保存；会话使用加密、HttpOnly Cookie。</p><button className="primary full" disabled={!!busy}>{busy?<LoaderCircle className="spin" size={17}/>:<Link2 size={17}/>}连接账号</button></form>}{error&&<div className="message error" role="alert">{error}</div>}<div className="model-status"><strong>教案生成服务</strong><span className={'badge '+(status.modelConfigured?'verified':'pending')}>模型服务 {status.modelConfigured?'已配置':'待管理员配置'}</span></div><p className="helper">AI 生成与修订会将教学需求及选定知识发送至 已配置的模型服务，不发送账号密码。本站不限制模型请求次数。</p><a href="https://kg.chineseplus.net" target="_blank" rel="noreferrer" className="external-link">前往图谱平台了解账号申请<ExternalLink size={14}/></a></section></div>}
  {templateOpen&&<div className="modal-backdrop" onClick={()=>setTemplateOpen(false)}><section className="modal template-modal" role="dialog" aria-modal="true" aria-labelledby="template-modal-title" onClick={e=>e.stopPropagation()}><button className="modal-close" aria-label="关闭教案结构偏好" onClick={()=>setTemplateOpen(false)}><X/></button><span className="section-icon"><LayoutTemplate size={22}/></span><h2 id="template-modal-title">教案结构偏好</h2><p>选择预设模板、决定教案包含哪些模块，并写下排版与行文上的特别要求。这些偏好会随教学需求一起提交。</p><TemplateConfigPanel defaultOpen value={brief.templateConfig??defaultTemplateConfig} onChange={updateTemplateConfig}/><div className="audience-panel-actions"><button type="button" className="primary" onClick={()=>setTemplateOpen(false)}><Check size={15}/>完成</button></div></section></div>}
- {info&&<div className="modal-backdrop" onClick={()=>setInfo(false)}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="info-title" onClick={e=>e.stopPropagation()}><button className="modal-close" aria-label="关闭说明" onClick={()=>setInfo(false)}><X/></button><h2 id="info-title">知识有来源，生成有边界</h2><p>本工具依据提供的 2026-10-18 Schema，通过知识图谱 execute-cypher 接口检索词汇、语法、汉字、等级与关联内容。页面不提供任意 Cypher 执行。</p><p>绿色标记表示查询时匹配到节点；未返回字段保持空缺。教学活动、角色卡、练习属于模板或 AI 草稿，不代表图谱原有内容。汉字学习依赖不会被解释为通用语法先修关系。</p><p>网站公开可访问。每位访客使用自己的获批图谱账号；草稿与修订历史保存在当前浏览器，可导出备份。当前不启用网站账号与云端保存；图谱密码不保存。</p><p>图谱平台注明当前 API 权限限于活动成果创作。使用者须确认用途符合授权范围；本网站公开发布并不扩大原有数据授权。</p><button className="secondary" onClick={()=>{if(confirm('清除本浏览器的全部草稿与历史？建议先导出备份。')){const snap=emptyWorkspaceForNewLesson([]);writeWorkspaceSnapshot(snap);setHistory([]);setDraft(null);setKnowledge([]);setBrief(snap.brief);setStep(0);setEntryChoice(null);setKnowledgeVerifyVisible(false);setWizardEpoch(n=>n+1);setInfo(false)}}}><Trash2 size={16}/>清除本机草稿与历史</button></section></div>}
+ {info&&<div className="modal-backdrop" onClick={()=>setInfo(false)}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="info-title" onClick={e=>e.stopPropagation()}><button className="modal-close" aria-label="关闭说明" onClick={()=>setInfo(false)}><X/></button><h2 id="info-title">知识有来源，生成有边界</h2><p>本工具依据提供的 2026-10-18 Schema，通过知识图谱 execute-cypher 接口检索词汇、语法、汉字、等级与关联内容。页面不提供任意 Cypher 执行。</p><p>绿色标记表示查询时匹配到节点；未返回字段保持空缺。教学活动、角色卡、练习属于模板或 AI 草稿，不代表图谱原有内容。汉字学习依赖不会被解释为通用语法先修关系。</p><p>网站公开可访问。每位访客使用自己的获批图谱账号；草稿与修订历史保存在当前浏览器，可导出备份。当前不启用网站账号与云端保存；图谱密码不保存。</p><p>图谱平台注明当前 API 权限限于活动成果创作。使用者须确认用途符合授权范围；本网站公开发布并不扩大原有数据授权。</p><button className="secondary" onClick={()=>{if(confirm('清除本浏览器的全部草稿与历史？建议先导出备份。')){const snap=emptyWorkspaceForNewLesson([]);flushWorkspace(snap);setWorkspaceActive(false);setHistory([]);setDraft(null);setKnowledge([]);setBrief(snap.brief);setStep(0);setEntryChoice(null);setKnowledgeVerifyVisible(false);setWizardEpoch(n=>n+1);setInfo(false)}}}><Trash2 size={16}/>清除本机草稿与历史</button></section></div>}
  </div>
 }
