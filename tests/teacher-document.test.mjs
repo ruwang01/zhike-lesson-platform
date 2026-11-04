@@ -19,7 +19,7 @@ test('teacher lessons keep teaching tasks while graph originals move into the ev
  assert.ok(teacher.includes('附录一 教学资料')&&teacher.includes('附录二 待核验事项'));
  assert.deepEqual(teacherDocumentContext(draft).lesson.vocabulary,[]);assert.deepEqual(teacherDocumentContext(draft).lesson.grammar,[]);
 });
-test('teacher OOXML has required fonts, margins, three columns, black borders and cantSplit',async()=>{
+test('teacher OOXML preserves typography and lets only teaching steps flow across pages',async()=>{
  const blob=await makeWord(fixture(),'teacher',{author:'测试作者'}),bytes=await blob.arrayBuffer(),teacher=docxMember(bytes),styles=docxMember(bytes,'word/styles.xml');
  assert.ok(styles.indexOf('</w:docDefaults>')<styles.indexOf('<w:style '),'Word defaults precede named styles');
  assert.ok(teacher.includes('w:eastAsia="KaiTi"'));assert.ok(teacher.includes('w:ascii="Times New Roman"'));
@@ -30,15 +30,21 @@ test('teacher OOXML has required fonts, margins, three columns, black borders an
  const firstTable=teacher.match(/<w:tbl>[\s\S]*?<\/w:tbl>/)[0];
  assert.equal([...firstTable.matchAll(/<w:gridCol /g)].length,3);
  for(const name of ['环节含时间','教师语言/行为','教学说明'])assert.ok(firstTable.includes(name));
- for(const row of teacher.matchAll(/<w:tr>[\s\S]*?<\/w:tr>/g))assert.ok(row[0].includes('<w:cantSplit/>'));
+ const stepRows=[...firstTable.matchAll(/<w:tr>[\s\S]*?<\/w:tr>/g)];
+ assert.ok(stepRows[0][0].includes('<w:cantSplit/>'));
+ for(const row of stepRows.slice(1)){assert.ok(row[0].includes('<w:cantSplit w:val="0"/>'));assert.ok(row[0].includes('<w:keepNext w:val="0"/><w:keepLines w:val="0"/><w:widowControl/>'))}
+ for(const row of teacher.slice(teacher.indexOf(firstTable)+firstTable.length).matchAll(/<w:tr>[\s\S]*?<\/w:tr>/g))assert.ok(row[0].includes('<w:cantSplit/>'));
+ assert.ok(!firstTable.includes('<w:br w:type="page"/>'));
  assert.ok(firstTable.includes('<w:tblHeader/>'));
 });
-test('long activities become protected continuation rows without losing text',async()=>{
+test('long activities stay in a flowing table with continuation labels and no lost text',async()=>{
  const draft=fixture();draft.lesson.activities[0].teacher='连续教师指令。'.repeat(160);draft.lesson.activities[0].students='学生共同完成任务。'.repeat(90);
  const teacher=await xml(draft);assert.ok(teacher.includes('复习与情境导入（续）'));
  const rows=[...teacher.matchAll(/<w:tr>[\s\S]*?<\/w:tr>/g)];assert.ok(rows.length>draft.lesson.activities.length+1);
  assert.equal((teacher.match(/连续教师指令。/g)||[]).length,160);
- for(const row of rows)assert.ok(row[0].includes('<w:cantSplit/>'));
+ const table=teacher.match(/<w:tbl>[\s\S]*?<\/w:tbl>/)[0];
+ assert.equal((table.match(/<w:tblHeader\/>/g)||[]).length,1);
+ for(const row of [...table.matchAll(/<w:tr>[\s\S]*?<\/w:tr>/g)].slice(1))assert.ok(row[0].includes('<w:cantSplit w:val="0"/>'));
 });
 test('activities with many short instructions retain every instruction in bounded continuation rows',async()=>{
  const draft=fixture(),instructions=Array.from({length:70},(_,index)=>`动作${index+1}`);
