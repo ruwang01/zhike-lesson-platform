@@ -1,11 +1,12 @@
 'use client';
-import {useCallback,useEffect,useMemo,useState} from 'react';
+import {useCallback,useMemo,useState} from 'react';
 import {ArrowLeft,ArrowRight,Check,LoaderCircle,Search,X} from 'lucide-react';
 import {knowledgeColumns,getKnowledgeGroups,splitTerms,graphSearchStandard,withBriefDefaults,type Brief,type Knowledge,type KnowledgeGroups} from '@/lib/lesson';
 import {KnowledgeItem} from '@/components/studio/knowledge-item';
 import {IdiomMatches} from '@/components/studio/idiom-matches';
 import {GrammarRecommendations} from '@/components/studio/grammar-recommendations';
 import {CulturalRecommendations} from '@/components/studio/cultural-recommendations';
+import type {KnowledgeWizardState} from '@/lib/knowledge-wizard';
 import {chooseIdiom} from '@/lib/idioms';
 
 type ColumnKey=(typeof knowledgeColumns)[number]['key'];
@@ -21,7 +22,7 @@ function groupsFromTags(tags:Record<ColumnKey,string[]>):Partial<KnowledgeGroups
  const groups:Partial<KnowledgeGroups>={};
  for(const {key} of knowledgeColumns){
   const joined=[...new Set(tags[key]||[])].filter(Boolean).join('、');
-  if(joined)groups[key]=joined;
+  groups[key]=joined;
  }
  return groups;
 }
@@ -46,6 +47,8 @@ async function searchGraphApi(terms:string[],standard:string){
 }
 
 export type KnowledgeFieldsProps={
+ wizard:KnowledgeWizardState;
+ onWizardChange:(updater:(previous:KnowledgeWizardState)=>KnowledgeWizardState)=>void;
  brief:Brief;
  standard:string;
  knowledge:Knowledge[];
@@ -59,14 +62,17 @@ export type KnowledgeFieldsProps={
  onNeedConnect:()=>void;
  onSpecifyActivity?:()=>void;
  onWizardComplete?:()=>void;
- onPruneKnowledge?:()=>void;
 };
 
-export default function KnowledgeFields({brief,standard,knowledge,connected,username,onChange,onKnowledgeChange,onCulturalTopicsChange,onStepSearch,onGrammarMatched,onNeedConnect,onSpecifyActivity,onWizardComplete,onPruneKnowledge}:KnowledgeFieldsProps){
- const [step,setStep]=useState(0);
- const [tags,setTags]=useState<Record<ColumnKey,string[]>>(()=>tagsFromGroups(getKnowledgeGroups(brief)));
- const [draft,setDraft]=useState('');
- const [stepCandidateIds,setStepCandidateIds]=useState<string[]>([]);
+export default function KnowledgeFields({wizard,onWizardChange,brief,standard,knowledge,connected,username,onChange,onKnowledgeChange,onCulturalTopicsChange,onStepSearch,onGrammarMatched,onNeedConnect,onSpecifyActivity,onWizardComplete}:KnowledgeFieldsProps){
+ const step=wizard.step;
+ const tags=useMemo(()=>tagsFromGroups(getKnowledgeGroups(brief)),[brief.knowledgeGroups,brief.terms]);
+ const activeKey=knowledgeColumns[step].key;
+ const draft=wizard.inputs[activeKey];
+ const stepCandidateIds=wizard.candidateIds[activeKey];
+ const setDraft=(value:string)=>onWizardChange(previous=>({...previous,inputs:{...previous.inputs,[activeKey]:value}}));
+ const setStep=(value:number)=>onWizardChange(previous=>({...previous,step:value}));
+ const setStepCandidateIds=(value:string[]|((ids:string[])=>string[]))=>onWizardChange(previous=>({...previous,candidateIds:{...previous.candidateIds,[activeKey]:typeof value==='function'?value(previous.candidateIds[activeKey]):value}}));
  const [searching,setSearching]=useState(false);
  const [searchError,setSearchError]=useState('');
 
@@ -76,16 +82,7 @@ export default function KnowledgeFields({brief,standard,knowledge,connected,user
  const expectedKind=kindForKey[key];
  const totalSteps=knowledgeColumns.length;
 
- useEffect(()=>{
-  const groups=getKnowledgeGroups(brief);
-  setTags(tagsFromGroups(groups));
-  const hasGroupText=knowledgeColumns.some(c=>(groups[c.key]||'').trim());
-  if(!hasGroupText&&!splitTerms(brief.terms).length){setDraft('');setStepCandidateIds([]);setSearchError('')}
- },[brief.knowledgeGroups,brief.terms]);
- useEffect(()=>{setDraft('');setStepCandidateIds([]);setSearchError('')},[step]);
-
  const persistTags=useCallback((next:Record<ColumnKey,string[]>)=>{
-  setTags(next);
   onChange(groupsFromTags(next));
   if(knowledgeColumns.some(c=>(next[c.key]||[]).length))onSpecifyActivity?.();
  },[onChange,onSpecifyActivity]);
@@ -104,7 +101,6 @@ export default function KnowledgeFields({brief,standard,knowledge,connected,user
   try{
    const standard=graphSearchStandard(withBriefDefaults(brief));
    const mergedTags={...tags,[key]:[...new Set([...(tags[key]||[]),...terms])]};
-   setTags(mergedTags);
    onChange(groupsFromTags(mergedTags));
    const all=await searchGraphApi(terms,standard);
    const filtered=expectedKind?all.filter(n=>n.kind===expectedKind):all;
@@ -122,29 +118,24 @@ export default function KnowledgeFields({brief,standard,knowledge,connected,user
   if(!kind)return;
   const names=[...new Set([
    ...(tags[key]||[]),
-   ...knowledge.filter(k=>k.kind===kind&&k.role!=='排除').map(k=>k.name),
+   ...knowledge.filter(k=>(k.kind===kind||(key==='vocabulary'&&k.kind==='Idiom'))&&k.role!=='排除').map(k=>k.name),
   ])].filter(Boolean).slice(0,20);
   persistTags({...tags,[key]:names});
  };
 
- const finishWizard=()=>{syncStepGroups();setStepCandidateIds([]);setSearchError('');onWizardComplete?.()};
+ const finishWizard=()=>{setSearchError('');onWizardComplete?.()};
 
  const goNext=(skip:boolean)=>{
   if(!skip)syncStepGroups();
-  else setDraft('');
-  setStepCandidateIds([]);
   setSearchError('');
-  onPruneKnowledge?.();
-  if(step<totalSteps-1)setStep(s=>s+1);
+  if(step<totalSteps-1)setStep(step+1);
   else finishWizard();
  };
 
  const goPrev=()=>{
   if(step===0)return;
-  setDraft('');
-  setStepCandidateIds([]);
   setSearchError('');
-  setStep(s=>s-1);
+  setStep(step-1);
  };
 
  const stepItems=useMemo(()=>{
@@ -159,8 +150,8 @@ export default function KnowledgeFields({brief,standard,knowledge,connected,user
  const idiomStepItems=useMemo(()=>{
   if(key!=='vocabulary')return [];
   const ids=new Set(stepCandidateIds);
-  return knowledge.filter(k=>k.kind==='Idiom'&&k.role!=='排除'&&ids.has(k.id));
- },[knowledge,stepCandidateIds,key]);
+  return knowledge.filter(k=>k.kind==='Idiom'&&k.role!=='排除'&&(ids.has(k.id)||(tags.vocabulary||[]).includes(k.name)));
+ },[knowledge,stepCandidateIds,key,tags.vocabulary]);
 
  const updateItem=(item:Knowledge)=>onKnowledgeChange(prev=>prev.map(k=>k.id===item.id?item:k));
 
@@ -172,11 +163,11 @@ export default function KnowledgeFields({brief,standard,knowledge,connected,user
 
   {(key==='characters'||key==='vocabulary')&&stepItems.length>0&&<div className="knowledge-wizard-cards">{stepItems.map(item=><KnowledgeItem key={item.id} item={item} standard={standard} defaultOpen={!item.scopeConfirmed} searchHint="请先在本步点击「搜索图谱」。" onChange={updateItem}/>)}</div>}
 
-  {key==='vocabulary'&&<div className="wizard-step-extra wizard-idiom-panel"><h4 className="wizard-step-extra-title">成语匹配</h4><IdiomMatches embedded brief={brief} connected={connected} username={username} knowledge={knowledge} onChoose={(item,checked)=>{onKnowledgeChange(old=>chooseIdiom(old,item,checked));if(checked)setStepCandidateIds(ids=>[...new Set([...ids,item.id])])}}/></div>}
+  {key==='vocabulary'&&<div className="wizard-step-extra wizard-idiom-panel"><h4 className="wizard-step-extra-title">成语匹配</h4><IdiomMatches embedded brief={brief} connected={connected} username={username} knowledge={knowledge} onChoose={(item,checked)=>{if(checked)persistTags({...tags,vocabulary:[...new Set([...tags.vocabulary,item.name])]});onKnowledgeChange(old=>chooseIdiom(old,item,checked));if(checked)setStepCandidateIds(ids=>[...new Set([...ids,item.id])])}}/></div>}
 
   {idiomStepItems.length>0&&<div className="knowledge-wizard-cards">{idiomStepItems.map(item=><KnowledgeItem key={item.id} item={item} standard={standard} defaultOpen={!item.scopeConfirmed} searchHint="请先勾选上方成语。" onChange={updateItem}/>)}</div>}
 
-  {key==='grammar'&&<div className="wizard-step-extra"><h4 className="wizard-step-extra-title">语法匹配与相关推荐</h4><GrammarRecommendations embedded brief={brief} connected={connected} username={username} knowledge={knowledge} onMatched={items=>{onGrammarMatched(items);setStepCandidateIds(ids=>[...new Set([...ids,...items.map(i=>i.id)])]);let patch:Partial<KnowledgeGroups>={};setTags(prev=>{const names=[...new Set([...(prev.grammar||[]),...items.map(i=>i.name)])].slice(0,20);const next={...prev,grammar:names};patch=groupsFromTags(next);return next});onChange(patch)}} onChoose={(item,checked)=>{onKnowledgeChange(old=>old.some(node=>node.id===item.id)?old.map(node=>node.id===item.id?{...node,role:checked?'拓展':'排除'}:node):checked?[...old,item]:old);if(checked)setStepCandidateIds(ids=>[...new Set([...ids,item.id])])}}/></div>}
+  {key==='grammar'&&<div className="wizard-step-extra"><h4 className="wizard-step-extra-title">语法匹配与相关推荐</h4><GrammarRecommendations embedded brief={brief} connected={connected} username={username} knowledge={knowledge} onMatched={items=>{onGrammarMatched(items);setStepCandidateIds(ids=>[...new Set([...ids,...items.map(i=>i.id)])]);const names=[...new Set([...(tags.grammar||[]),...items.map(i=>i.name)])].slice(0,20);onChange(groupsFromTags({...tags,grammar:names}))}} onChoose={(item,checked)=>{onKnowledgeChange(old=>old.some(node=>node.id===item.id)?old.map(node=>node.id===item.id?{...node,role:checked?'拓展':'排除'}:node):checked?[...old,item]:old);if(checked)setStepCandidateIds(ids=>[...new Set([...ids,item.id])])}}/></div>}
 
   {key==='grammar'&&stepItems.length>0&&<div className="knowledge-wizard-cards">{stepItems.map(item=><KnowledgeItem key={item.id} item={item} standard={standard} defaultOpen={!item.scopeConfirmed} searchHint="请先在本步搜索或等待语法匹配。" onChange={updateItem}/>)}</div>}
 

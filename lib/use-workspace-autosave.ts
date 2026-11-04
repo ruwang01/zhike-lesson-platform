@@ -24,13 +24,13 @@ export function useWorkspaceAutosave(snapshot: Snapshot, ready: boolean) {
     timer.current = setTimeout(() => flush(), 350);
     return () => {if (timer.current !== null) clearTimeout(timer.current)};
   }, [ready, snapshot.brief, snapshot.knowledge, snapshot.draft, snapshot.history,
-      snapshot.flow, snapshot.active, snapshot.step, snapshot.tab, snapshot.knowledgeVerifyVisible, flush]);
+      snapshot.flow, snapshot.active, snapshot.step, snapshot.tab, snapshot.knowledgeVerifyVisible, snapshot.knowledgeWizard, flush]);
   useEffect(() => {
     if (!ready) return;
     const save = () => {flush()};
     const visibility = () => {if (document.visibilityState === 'hidden') save()};
     const navigation = (event: MouseEvent) => {
-      if (event.target instanceof Element && event.target.closest('a[href], [role="tab"], .tabbar button, .steps button')) save();
+      if (event.target instanceof Element && event.target.closest('a[href], [role="tab"], .tabbar button, .steps button, .knowledge-wizard-nav button')) save();
     };
     window.addEventListener('pagehide', save);
     window.addEventListener('beforeunload', save);
