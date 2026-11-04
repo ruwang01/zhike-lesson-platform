@@ -28,7 +28,7 @@ export function automaticSelections(fresh:Knowledge[],choices:Selection[]):Selec
  });
  return [...resolved,...choices.filter(choice=>!fresh.some(node=>node.id===choice.id&&node.kind===choice.kind&&node.name===choice.name))];
 }
-export function exampleChoices(raw:string){return [...new Set(raw.split(/││|\|\||\r?\n/).map(x=>x.trim()).filter(Boolean))]}
+export function exampleChoices(raw:unknown){if(typeof raw!=='string')return [];return [...new Set(raw.split(/││|\|\||\r?\n/).map(x=>x.trim()).filter(Boolean))]}
 export function meaningChoices(raw:string):string[]{
  const text=raw.trim();if(!text)return [];
  const markers=[...text.matchAll(/[⒈⒉⒊⒋⒌⒍⒎⒏⒐⒑⒒⒓⒔⒕⒖⒗⒘⒙⒚⒛]|[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]|(?<![\d.．])\d{1,2}[.．、](?!\d)|[（(]\d{1,2}[）)]|[一二三四五六七八九十]、/gu)];

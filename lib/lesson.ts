@@ -36,9 +36,10 @@ export const knowledgeGroupsSchema=z.object({characters:z.string().max(1200).def
 export type KnowledgeGroups=z.infer<typeof knowledgeGroupsSchema>;
 const emptyKnowledgeGroups=(terms=''):KnowledgeGroups=>({characters:'',vocabulary:terms,grammar:'',culture:'',other:''});
 export function getKnowledgeGroups(brief:{terms:string;knowledgeGroups?:Partial<KnowledgeGroups>|KnowledgeGroups}):KnowledgeGroups{
- const base=emptyKnowledgeGroups(brief.terms||'');
- if(!brief.knowledgeGroups||typeof brief.knowledgeGroups!=='object')return base;
- return {...base,...brief.knowledgeGroups};
+ if(!brief.knowledgeGroups||typeof brief.knowledgeGroups!=='object')return emptyKnowledgeGroups(typeof brief.terms==='string'?brief.terms:'');
+ const groups=emptyKnowledgeGroups();
+ for(const {key} of knowledgeColumns){const value=brief.knowledgeGroups[key];groups[key]=typeof value==='string'?value:''}
+ return groups;
 }
 export function graphTermsFromGroups(groups:Partial<KnowledgeGroups>|KnowledgeGroups|undefined):string{
  const split=(raw:unknown)=>typeof raw==='string'&&raw?raw.split(/[、，,；;\n]+/).map(t=>t.trim()).filter(Boolean):[];
@@ -322,10 +323,10 @@ export const initialBrief:Brief={topic:'比较周末出游方案并提出建议'
 export function freshBriefForNewLesson():Brief{
  return {...initialBrief,knowledgeGroups:undefined,culturalTopics:undefined,terms:''};
 }
-export function splitTerms(s:string){return [...new Set(s.split(/[、，,；;\n]+/).map(s=>s.trim()).filter(Boolean))].slice(0,20)}
+export function splitTerms(s:unknown){if(typeof s!=='string')return [];return [...new Set(s.split(/[、，,；;\n]+/).map(s=>s.trim()).filter(Boolean))].slice(0,20)}
 export function manualKnowledge(brief:Brief):Knowledge[]{
- const groups=brief.knowledgeGroups;
- const entries=groups?([['characters','Character'],['vocabulary','Word'],['grammar','Grammar']] as const).flatMap(([key,kind])=>splitTerms(groups[key]).map(name=>({name,kind}))):splitTerms(brief.terms).map(name=>({name,kind:'Word' as const}));
+ const groups=getKnowledgeGroups(brief);
+ const entries=([['characters','Character'],['vocabulary','Word'],['grammar','Grammar']] as const).flatMap(([key,kind])=>splitTerms(groups[key]).map(name=>({name,kind})));
  return entries.map(({name,kind},i)=>({id:`manual-${i}`,kind,name,role:'核心',verified:false,detail:'教师指定，尚未通过知识图谱核验。',example:'',levels:[],relations:[]}));
 }
 export function templateLesson(b:Brief,k:Knowledge[]):Lesson{

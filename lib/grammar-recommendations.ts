@@ -1,7 +1,7 @@
 import {z} from 'zod';
 import type {Knowledge} from './lesson';
 export const grammarCatalogQuery='MATCH (n:Grammar) RETURN n ORDER BY n.name LIMIT 3000';
-export function allGrammarTerms(value:string){return [...new Set(value.split(/[、，,；;\r\n]+/).map(value=>value.trim()).filter(Boolean))]}
+export function allGrammarTerms(value:unknown){if(typeof value!=='string')return [];return [...new Set(value.split(/[、，,；;\r\n]+/).map(value=>value.trim()).filter(Boolean))]}
 export function mergeGrammarMatches(existing:Knowledge[],matched:Knowledge[]):Knowledge[]{
  const kept=existing.filter(node=>node.verified||!matched.some(item=>item.name===node.name&&item.kind===node.kind));
  return [...kept.map(node=>{

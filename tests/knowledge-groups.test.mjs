@@ -10,3 +10,21 @@ test('culture and other requirements reach prompt without becoming graph evidenc
 test('prune drops stale knowledge outside current group columns and kind',()=>{const brief=briefSchema.parse({...initialBrief,knowledgeGroups:{characters:'吃、等',vocabulary:'便宜',grammar:'',culture:'',other:''}});const stale=[{id:'1',kind:'Word',name:'建议',role:'核心',verified:true,scopeConfirmed:true,detail:'',example:'',levels:[],relations:[]},{id:'2',kind:'Character',name:'吃',role:'核心',verified:true,scopeConfirmed:true,detail:'',example:'',levels:[],relations:[]},{id:'3',kind:'Word',name:'吃',role:'核心',verified:true,scopeConfirmed:true,detail:'',example:'',levels:[],relations:[]}];assert.equal(pruneKnowledgeToBrief(stale,brief).length,1);assert.ok(knowledgeInBriefScope(stale[1],brief));assert.ok(!knowledgeInBriefScope(stale[0],brief));assert.ok(!knowledgeInBriefScope(stale[2],brief))});
 test('fresh brief for new lesson drops prior knowledge groups and graph terms',()=>{const dirty=briefSchema.parse({...initialBrief,knowledgeGroups:{characters:'爱',vocabulary:'好',grammar:'',culture:'',other:''},terms:'爱、好'});const fresh=freshBriefForNewLesson();assert.equal(fresh.terms,'');assert.equal(fresh.knowledgeGroups,undefined);assert.equal(getKnowledgeGroups(fresh).characters,'');assert.equal(getKnowledgeGroups(fresh).vocabulary,'');assert.notDeepEqual(getKnowledgeGroups(dirty).characters,getKnowledgeGroups(fresh).characters)});
 test('step search augment keeps freshly matched nodes in prune scope',()=>{const brief=freshBriefForNewLesson();const node={id:'Character:爱',kind:'Character',name:'爱',role:'核心',verified:true,detail:'',example:'',levels:[],relations:[]};assert.equal(pruneKnowledgeToBrief([node],brief).length,0);const scoped=augmentBriefWithStepTerms(brief,'characters',['爱']);assert.equal(pruneKnowledgeToBrief([node],scoped).length,1);assert.equal(graphSearchStandard({}),'InternationalLevel')});
+
+test('partial knowledge groups can be confirmed without splitting absent categories',()=>{
+ for(const [key,kind] of [['characters','Character'],['vocabulary','Word'],['grammar','Grammar']]){
+  const brief={...initialBrief,terms:'本类知识',knowledgeGroups:{[key]:'本类知识'}};
+  const nodes=manualKnowledge(brief);
+  assert.deepEqual(nodes.map(node=>[node.kind,node.name]),[[kind,'本类知识']]);
+  assert.deepEqual(pruneKnowledgeToBrief(nodes,brief),nodes);
+  assert.ok(nodes.every(node=>knowledgeInBriefScope(node,brief)));
+ }
+ const brief={...initialBrief,knowledgeGroups:{culture:'春节',other:'课堂任务'}};
+ assert.deepEqual(manualKnowledge(brief),[]);
+});
+test('missing or non-text knowledge fields produce no invented terms and keep legacy vocabulary',()=>{
+ assert.deepEqual(manualKnowledge({...initialBrief,knowledgeGroups:{characters:undefined,vocabulary:null,grammar:123}}),[]);
+ assert.equal(getKnowledgeGroups({...initialBrief,knowledgeGroups:{characters:'爱'}}).vocabulary,'');
+ assert.deepEqual(manualKnowledge(initialBrief).map(node=>node.name),['便宜','方便','建议','比较','比']);
+ assert.deepEqual(manualKnowledge({...initialBrief,knowledgeGroups:{}}),[]);
+});
