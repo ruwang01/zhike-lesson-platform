@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
+import {docxMember} from './docx-xml-helper.mjs';
 import {readFileSync} from 'node:fs';
 import {initialBrief,manualKnowledge,templateLesson,placeholderIssues} from '../lib/lesson.ts';
 
@@ -16,7 +17,7 @@ test('standard structure export contains the six required sections and no placeh
  const bytes=Buffer.from(await blob.arrayBuffer());
  // 引擎用 store-only 打包，document.xml 以明文存在 ZIP 中
  const text=bytes.toString('utf8').replace(/<[^>]*>/g,'\n');
- for(const section of ['一、教学对象','二、参考教材','三、课型','四、课时','五、教学目标','六、教学重点与难点'])
+ for(const section of ['一、教学对象','二、参考教材','三、课型','四、课时','五、教学目标','六、教学重难点'])
   assert.ok(text.includes(section),'missing section '+section);
  assert.ok(text.includes('认知领域')&&text.includes('技能领域')&&text.includes('情感领域'),'missing objective domains');
  assert.ok(text.includes('来华留学生'),'missing audience');
@@ -90,7 +91,7 @@ test('a list with one item is printed without a number',async()=>{
  assert.ok(!teacher.includes('1. 唯一的重点'),'单条教学重点不应带编号');
  assert.ok(!teacher.includes('1. 唯一的难点'),'单条教学难点不应带编号');
  assert.ok(!teacher.includes('1. 唯一的认知目标'),'单条认知目标不应带编号');
- assert.ok(!teacher.includes('练习 1'),'单条练习不应带编号');
+ assert.ok(teacher.includes('练习 1'),'练习标题始终使用练习 1 的格式');
  assert.ok(!student.includes('1. 唯一的认知目标'),'学生单条目标不应带编号');
  assert.ok(!student.includes('1. 唯一环节'),'学生单条课堂任务不应带编号');
  assert.ok(!student.includes('1. 唯一的题目'),'学生单条练习不应带编号');
@@ -128,14 +129,14 @@ test('teacher Word export preserves learner background and classroom environment
  const text=Buffer.from(await blob.arrayBuffer()).toString('utf8');
  for(const value of ['日语、泰语','多国混合','授课地点：海外','《等级标准》 3级'])assert.ok(text.includes(value),'missing context '+value);
 });
-test('grammar example questions and stem links enter teacher and student materials while student export omits graph answers',async()=>{
+test('graph questions stay out of teacher lessons and remain in the evidence package and student worksheet',async()=>{
  const {makeWord}=await compile('lib/export.ts',{name:'grammar-export',setup(b){b.onResolve({filter:/^\.\/server$/},()=>({path:'server',namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:`export const config=()=>({});export class AppError extends Error{}`,loader:'js'}))}});
  const question={id:'Question:fixture',name:'图谱例题标题',description:'请选择恰当的表达。',stem:'https://kg.chineseplus.net/fixture-stem.png',corpus:'图谱语料',choices:'A甲 B乙',answer:'独立答案标记',listenStem:'',listenCorpus:'',links:[{label:'题干链接',url:'https://kg.chineseplus.net/fixture-stem.png'}]};
  const knowledge=[{...k[0],kind:'Grammar',grammarQuestions:[question],selectedQuestionIds:[question.id]}];
- for(const kind of ['teacher','student']){
-  const blob=await makeWord({...draft,knowledge},kind),text=Buffer.from(await blob.arrayBuffer()).toString('utf8');
-  assert.ok(text.includes('图谱例题标题'));
-  assert.ok(text.includes('https://kg.chineseplus.net/fixture-stem.png'));
-  assert.equal(text.includes('独立答案标记'),kind==='teacher');
+ for(const kind of ['teacher','student','evidence']){
+  const blob=await makeWord({...draft,knowledge},kind),text=docxMember(await blob.arrayBuffer());
+  assert.equal(text.includes('图谱例题标题'),kind!=='teacher');
+  assert.equal(text.includes('https://kg.chineseplus.net/fixture-stem.png'),kind!=='teacher');
+  assert.equal(text.includes('独立答案标记'),kind==='evidence');
  }
 });

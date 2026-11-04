@@ -1,3 +1,4 @@
+import {partitionLessonMaterials,cleanDocumentText} from '../material-routing';
 import { buildTeacherDocx, buildStudentDocx } from './exporter/docbuild.js';
 
 /* ------------------------------------------------------------------ *
@@ -56,6 +57,7 @@ export type ApiLesson = {
 export type ApiResponse = {
   lesson: ApiLesson;
   knowledge: ApiKnowledge[];
+  culturalEvidence?: {sentence:string}[];
   brief?: {
     audience?: string;
     referenceMaterial?: string;
@@ -150,6 +152,7 @@ export type EngineCtx = {
 
 export type ExportOptions = {
   /** 目标领域名，默认「教学目标」 */
+  includeKnowledgeMaterials?: boolean;
   objectiveDomain?: string;
   /** 教学重点；不传则由核心知识推导 */
   keyPoints?: string[];
@@ -175,7 +178,7 @@ export type ExportOptions = {
  * 四、工具函数
  * ------------------------------------------------------------------ */
 
-const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : v == null ? '' : String(v).trim());
+const str = (v: unknown): string => cleanDocumentText(typeof v === 'string' ? v.trim() : v == null ? '' : String(v).trim());
 const arr = <T,>(v: T[] | undefined | null): T[] => (Array.isArray(v) ? v : []);
 
 /** 取参与本次教学的核心知识（已排除 role==='排除' 的条目） */
@@ -273,7 +276,7 @@ export function toEngineCtx(apiResponse: ApiResponse, options: ExportOptions = {
   });
 
   /* --- knowledge → vocabulary / grammar --- */
-  const vocabulary: EngineVocabulary[] = core.map((k) => ({
+  const vocabulary: EngineVocabulary[] = (options.includeKnowledgeMaterials?core:[]).filter(k=>k.kind==='Word'||k.kind==='Idiom').map((k) => ({
     word: str(k.name),
     pinyin: str(k.pinyin),
     meaning: meaningOf(k),
@@ -281,7 +284,7 @@ export function toEngineCtx(apiResponse: ApiResponse, options: ExportOptions = {
     examples: examplesOf(k),
   }));
 
-  const grammar: EngineGrammar[] = knowledge
+  const grammar: EngineGrammar[] = (options.includeKnowledgeMaterials?knowledge:[])
     .filter((k) => k.kind === 'Grammar')
     .map((k) => ({
       name: str(k.name),
@@ -310,7 +313,7 @@ export function toEngineCtx(apiResponse: ApiResponse, options: ExportOptions = {
   const keyPoints =
     options.keyPoints?.length
       ? options.keyPoints
-      : core.map((k) => `理解并使用「${str(k.name)}」的释义与图谱原句（${str(k.role)}知识）`);
+      : core.length ? [`在本课情境中理解并恰当使用${core.map(k=>`“${str(k.name)}”`).join('、')}，完成交际任务。`] : [];
 
   const difficulties = options.difficulties
     ? [...options.difficulties]
@@ -330,13 +333,13 @@ export function toEngineCtx(apiResponse: ApiResponse, options: ExportOptions = {
 
   const engineLesson: EngineLesson = {
     title: str(lesson.title) || '教学设计',
-    author: options.author,
+    author: str(options.author),
     referenceMaterial,
     objectives,
     stages,
     keyPoints,
     difficulties,
-    materials: arr(lesson.materials)
+    materials: (options.includeKnowledgeMaterials?arr(lesson.materials):partitionLessonMaterials(arr(lesson.materials),knowledge,(apiResponse.culturalEvidence||[]).map(item=>item.sentence)).teaching)
       .map((m) => ({ title: str(m.title), content: str(m.content) }))
       .filter((m) => m.title || m.content),
     vocabulary,
@@ -385,7 +388,7 @@ export function exportToDocx(apiResponse: ApiResponse, options: ExportOptions = 
 
 /** 学生学习任务单（同一套引擎，排版不同） */
 export function exportStudentDocx(apiResponse: ApiResponse, options: ExportOptions = {}): Uint8Array {
-  const ctx = toEngineCtx(apiResponse, options);
+  const ctx = toEngineCtx(apiResponse, {...options,includeKnowledgeMaterials:true});
   return buildStudentDocx(ctx as any) as unknown as Uint8Array;
 }
 

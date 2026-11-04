@@ -24,6 +24,7 @@ export type WorkspaceSnapshot = {
   knowledgeWizard?: KnowledgeWizardState;
   selectionConfirmations?: SelectionConfirmations;
   designWizard?: DesignWizardProgress;
+  exportAuthor?: string;
 };
 
 export function readWorkspaceSnapshot(): WorkspaceSnapshot | null {

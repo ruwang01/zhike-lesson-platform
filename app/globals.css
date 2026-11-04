@@ -2834,3 +2834,42 @@ main{max-width:1440px;margin:auto;padding:14px 44px 0;position:relative}
  .lesson-wizard .module-nav .nav-item svg{flex-shrink:0}
 }
 @media(max-width:800px){.design-step-heading .design-step-eyebrow{display:none}}
+
+/* Teacher output is a readable document; graph source sheets remain a separate export. */
+.teacher-output-tools{padding:24px 30px 16px;background:#fafcfb;border-bottom:1px solid var(--hair)}
+.teacher-author-input{max-width:280px;margin-bottom:16px}
+.teacher-export-actions{flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.teacher-quality-check{padding:16px 30px;border-bottom:1px solid var(--hair);font-size:13px}
+.teacher-quality-check>summary{cursor:pointer;color:var(--muted);font-weight:500}
+.teacher-quality-check>div{padding-top:16px}
+.teacher-document-frame{padding:28px;background:#edf1ee}
+.teacher-document-preview{width:210mm;max-width:100%;min-height:297mm;margin:0 auto;padding:25.4mm 31.8mm;box-sizing:border-box;background:#fff;box-shadow:0 3px 18px #12211f0c;color:#000;line-height:1.65;font-family:'Times New Roman','KaiTi','楷体','STKaiti','Kaiti SC','AR PL KaitiM GB',serif;font-size:12pt;overflow-wrap:anywhere}
+.teacher-document-preview h1,.teacher-document-preview h2,.teacher-document-preview h3,.teacher-document-preview p,.teacher-document-preview th,.teacher-document-preview td,.teacher-document-preview li{font-family:inherit;color:#000}
+.teacher-document-preview header{margin-bottom:28px;text-align:center}
+.teacher-document-preview h1{font-size:22pt;font-weight:700;line-height:1.5;margin:0 0 14px}
+.teacher-document-preview .teacher-document-author{font-size:14pt;text-align:center;margin:0}
+.teacher-document-preview h2{font-size:14pt;font-weight:700;margin:24px 0 12px;line-height:1.5}
+.teacher-document-preview h3{font-size:12pt;font-weight:700;margin:16px 0 8px;line-height:1.5}
+.teacher-document-preview p{margin:0 0 10px;white-space:pre-line;font-size:12pt}
+.teacher-document-preview ol{list-style:decimal;margin:0 0 12px;padding-left:1.65em}
+.teacher-document-preview li{padding-left:.2em;margin:0 0 8px;white-space:pre-line}
+.teacher-document-highlight{background:#f2f6f2;padding:2px 14px 10px;margin:20px -14px}
+.teacher-document-steps{border-collapse:collapse;width:100%;table-layout:fixed;font-size:12pt;margin:12px 0}
+.teacher-document-steps th,.teacher-document-steps td{border:1px solid #000;padding:10px 9px;vertical-align:top;white-space:pre-line;background:none;overflow-wrap:anywhere;line-height:1.5}
+.teacher-document-steps th{font-weight:700;text-align:center}
+.teacher-document-total{font-size:12pt;margin-top:10px}
+.teacher-document-appendix{border-top:1px dashed #c9d0ca;margin-top:48px;padding-top:20px;break-before:page}
+@media(max-width:900px){.teacher-document-frame{padding:18px}.teacher-document-preview{padding:32px 26px}}
+@media(max-width:600px){
+ .teacher-output-tools,.teacher-quality-check{padding:18px}
+ .teacher-document-frame{padding:12px;background:#eef2ef}
+ .teacher-document-preview{padding:26px 18px;min-height:auto}
+ .teacher-document-preview h1{font-size:22pt}
+ .teacher-export-actions{align-items:stretch}
+ .teacher-document-steps colgroup,.teacher-document-steps thead{display:none}
+ .teacher-document-steps,.teacher-document-steps tbody{display:block;border:0}
+ .teacher-document-steps tr{display:block;margin-bottom:18px;border:1px solid #000}
+ .teacher-document-steps td{display:block;border:0;border-bottom:1px solid #000;padding:10px 12px}
+ .teacher-document-steps td:last-child{border-bottom:0}
+ .teacher-document-steps td::before{content:attr(data-label);display:block;font-weight:700;margin-bottom:6px}
+}
