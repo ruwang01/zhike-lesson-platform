@@ -9,7 +9,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-import { moduleTitles, type Module } from '@/lib/modules';
+import { moduleTitles, WORKSPACE_URL, type Module } from '@/lib/modules';
 
 /**
  * Module 与 moduleTitles 定义在 @/lib/modules（服务端/客户端共用模块），
@@ -27,13 +27,13 @@ export type CapsuleTab = {
 
 /** 工作台页：胶囊内只显示「工作台」「设置」。 */
 const DASHBOARD_TABS: CapsuleTab[] = [
-  { key: 'dashboard', label: '工作台', href: '/', icon: LayoutDashboard },
+  { key: 'dashboard', label: '工作台', href: WORKSPACE_URL, icon: LayoutDashboard },
   { key: 'account', label: '设置', href: '/?m=account', icon: Settings2 },
 ];
 
 /** 其余页面：胶囊内显示完整六项，顺序固定。 */
 const FULL_TABS: CapsuleTab[] = [
-  { key: 'dashboard', label: '工作台', href: '/', icon: LayoutDashboard },
+  { key: 'dashboard', label: '工作台', href: WORKSPACE_URL, icon: LayoutDashboard },
   { key: 'design', label: '教案设计', href: '/?m=design', icon: BookOpen },
   { key: 'knowledge', label: '知识检索', href: '/?m=knowledge', icon: Network },
   { key: 'materials', label: '教学材料', href: '/?m=materials', icon: Files },

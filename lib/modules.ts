@@ -24,3 +24,9 @@ export const moduleTitles: Record<Module, string> = {
   account: '账号与设置',
   admin: '管理员窗口',
 };
+
+/** The bare domain is the welcome page; keep workspace modules at their existing URLs. */
+export const WORKSPACE_URL = '/?m=dashboard';
+export function isWorkspaceModule(value: unknown): value is Module {
+  return typeof value === 'string' && Object.hasOwn(moduleTitles, value);
+}

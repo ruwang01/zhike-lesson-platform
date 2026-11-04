@@ -1,10 +1,5 @@
-/**
- * 登录状态（前端临时版）。
- *
- * 当前不接入真实鉴权：点击「进入工作台」即写入本地标记。
- * 标记同时写入 localStorage 与 cookie，保证刷新后不丢失，
- * 且后续接入服务端会话时只需替换这两个读写点。
- */
+import {WORKSPACE_URL, isWorkspaceModule} from './modules';
+/** Workspace entry preference; graph API authentication still uses the server session. */
 export const LOGIN_KEY = 'zhike-login';
 
 export function isLoggedIn(): boolean {
@@ -43,9 +38,16 @@ export function clearLoggedIn(): void {
 }
 
 /** 只允许站内相对路径，避免开放重定向。 */
-export function safeNext(raw: string | null | undefined, fallback = '/'): string {
-  if (!raw) return fallback;
+export function safeNext(raw: string | null | undefined, fallback = WORKSPACE_URL): string {
+  if (typeof raw !== 'string') return fallback;
   const v = raw.trim();
-  if (!v.startsWith('/') || v.startsWith('//')) return fallback;
+  if (!v.startsWith('/') || v.startsWith('//') || v.includes('\\')) return fallback;
+  // A login return target must not send the user straight back to the welcome page.
+  const target = new URL(v, 'https://zhike.invalid');
+  if (target.pathname.replace(/\/$/, '') === '/login') return fallback;
+  if (target.pathname === '/') {
+    const modules = target.searchParams.getAll('m');
+    if (modules.length !== 1 || !isWorkspaceModule(modules[0])) return fallback;
+  }
   return v;
 }

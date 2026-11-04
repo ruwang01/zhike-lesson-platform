@@ -1,4 +1,5 @@
 'use client';
+import {WORKSPACE_URL} from '@/lib/modules';
 
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Sparkles, Droplet } from 'lucide-react';
@@ -493,7 +494,7 @@ export default function PreviewPage() {
               <li key={n}>{n}</li>
             ))}
           </ul>
-          <a className={styles.backLink} href="/">
+          <a className={styles.backLink} href={WORKSPACE_URL}>
             <ArrowLeft size={14} />
             返回工作台
           </a>
