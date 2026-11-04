@@ -49,6 +49,8 @@ async function searchGraphApi(terms:string[],standard:string){
 }
 
 export type KnowledgeFieldsProps={
+ embeddedWizard?:boolean;
+ columnKey?:ColumnKey;
  confirmations:SelectionConfirmations;
  onConfirmationChange:(key:SelectionKey,confirmed:boolean)=>void;
  wizard:KnowledgeWizardState;
@@ -68,8 +70,8 @@ export type KnowledgeFieldsProps={
  onWizardComplete?:()=>void;
 };
 
-export default function KnowledgeFields({confirmations,onConfirmationChange,wizard,onWizardChange,brief,standard,knowledge,connected,username,onChange,onKnowledgeChange,onCulturalTopicsChange,onStepSearch,onGrammarMatched,onNeedConnect,onSpecifyActivity,onWizardComplete}:KnowledgeFieldsProps){
- const step=wizard.step;
+export default function KnowledgeFields({embeddedWizard,columnKey,confirmations,onConfirmationChange,wizard,onWizardChange,brief,standard,knowledge,connected,username,onChange,onKnowledgeChange,onCulturalTopicsChange,onStepSearch,onGrammarMatched,onNeedConnect,onSpecifyActivity,onWizardComplete}:KnowledgeFieldsProps){
+ const step=columnKey?knowledgeColumns.findIndex(column=>column.key===columnKey):wizard.step;
  const tags=useMemo(()=>tagsFromGroups(getKnowledgeGroups(brief)),[brief.knowledgeGroups,brief.terms]);
  const activeKey=knowledgeColumns[step].key;
  const draft=wizard.inputs[activeKey];
@@ -160,7 +162,7 @@ export default function KnowledgeFields({confirmations,onConfirmationChange,wiza
  const updateItem=(item:Knowledge)=>onKnowledgeChange(prev=>prev.map(k=>k.id===item.id?item:k));
 
  return <div className="knowledge-fields knowledge-wizard">
-  <div className="knowledge-wizard-head"><span className="knowledge-wizard-step">步骤 {step+1} / {totalSteps}</span><h3 className="knowledge-wizard-title">{column.label}</h3><p className="helper knowledge-wizard-hint">{isGraph?'Enter 搜索图谱 · Shift+Enter 换行 · 在卡片内勾选并确认':'Enter 或按钮写入本课需求标签'}</p></div>
+  {!embeddedWizard&&<div className="knowledge-wizard-head"><span className="knowledge-wizard-step">步骤 {step+1} / {totalSteps}</span><h3 className="knowledge-wizard-title">{column.label}</h3><p className="helper knowledge-wizard-hint">{isGraph?'Enter 搜索图谱 · Shift+Enter 换行 · 在卡片内勾选并确认':'Enter 或按钮写入本课需求标签'}</p></div>}
   <label className="field knowledge-wizard-input"><span className="sr-only">{column.label}</span><textarea className="knowledge-wizard-textarea" rows={4} maxLength={1200} value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();void runSearch()}}} placeholder={'例如：'+column.example}/></label>
   <div className="knowledge-wizard-actions"><button type="button" className="secondary" disabled={searching} onClick={()=>void runSearch()}>{searching?<><LoaderCircle className="spin" size={16}/>搜索中…</>:isGraph?<><Search size={16}/>搜索图谱</>:<><Check size={16}/>确认加入标签</>}</button></div>
   {searchError&&<p className="helper knowledge-wizard-error" role="alert">{searchError}</p>}
@@ -179,12 +181,12 @@ export default function KnowledgeFields({confirmations,onConfirmationChange,wiza
 
   {(tags[key]||[]).length>0&&!isGraph&&<div className="knowledge-tag-row knowledge-tag-row-step">{(tags[key]||[]).map(name=><span className="knowledge-tag" key={name}>{name}<button type="button" aria-label={'移除'+name} onClick={()=>removeTag(key,name)}><X size={14}/></button></span>)}</div>}
 
-  <div className="knowledge-wizard-nav">
+  {!embeddedWizard&&<div className="knowledge-wizard-nav">
    <button type="button" className="text-button" disabled={step===0} onClick={goPrev}><ArrowLeft size={16}/>上一步</button>
    <div className="button-group">
     <button type="button" className="secondary" onClick={()=>goNext(true)}>跳过</button>
     {step<totalSteps-1?<button type="button" className="primary" onClick={()=>goNext(false)}>下一步<ArrowRight size={16}/></button>:<button type="button" className="primary" onClick={()=>goNext(false)}><Check size={16}/>完成知识指定</button>}
    </div>
-  </div>
+  </div>}
  </div>;
 }

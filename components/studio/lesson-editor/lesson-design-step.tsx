@@ -17,6 +17,7 @@ const designViews=['内容编辑','A4 预览与组装'] as const;
 type DesignView=(typeof designViews)[number];
 
 export type LessonDesignStepProps={
+ embeddedWizard?:boolean;
  draft:Draft;
  tab:number;
  setTab:(i:number)=>void;
@@ -33,7 +34,7 @@ export type LessonDesignStepProps={
 };
 
 export function LessonDesignStep(props:LessonDesignStepProps){
- const {draft,tab,setTab,total,durationSlices,currentMismatch,busy,revision,setRevision,editLesson,editActivity,generate,setStep}=props;
+ const {embeddedWizard,draft,tab,setTab,total,durationSlices,currentMismatch,busy,revision,setRevision,editLesson,editActivity,generate,setStep}=props;
  const [designView,setDesignView]=useState<DesignView>('内容编辑');
  const [editorLayout,setEditorLayout]=useState<LessonEditorLayout>(defaultEditorLayout);
  const skipPersist=useRef(true);
@@ -49,7 +50,7 @@ export function LessonDesignStep(props:LessonDesignStepProps){
   <PaperReveal className="paper-reveal">
    <div className="paper">
     <div className="paper-lesson">
-     <div className="card-heading"><span className="section-icon"><BookOpen size={22}/></span><div><h2>让教学设计落到每一步</h2><p>{draft.source!=='template'?'AI 设计建议 · 原文知识单独存档':'规则模板草稿 · 需补充具体情境和材料'}</p></div><span className="step-counter">03 / 04</span></div>
+     {!embeddedWizard&&<div className="card-heading"><span className="section-icon"><BookOpen size={22}/></span><div><h2>让教学设计落到每一步</h2><p>{draft.source!=='template'?'AI 设计建议 · 原文知识单独存档':'规则模板草稿 · 需补充具体情境和材料'}</p></div><span className="step-counter">03 / 04</span></div>}
      <div className="lesson-intro">
       <input className="lesson-title" aria-label="教案标题" value={draft.lesson.title} onChange={e=>editLesson(l=>({...l,title:e.target.value}))}/>
       <div className="lesson-meta"><span><Clock size={14}/>{total} 分钟</span><span><Users size={14}/>{draft.brief.students} 人</span><span>{draft.brief.courseType} · {formatTeachingContext(draft.brief)||'教学对象未填写'}</span><span className="badge pending">教师待审核</span></div>
@@ -79,6 +80,6 @@ export function LessonDesignStep(props:LessonDesignStepProps){
    </div>
   </PaperReveal>
   <div className="revision"><label htmlFor="revision"><Sparkles size={16}/>让 AI 协助修订</label><div><input id="revision" value={revision} maxLength={1000} onChange={e=>setRevision(e.target.value)} placeholder="例如：保留信息差，把小组活动换成两人活动"/><button className="secondary" disabled={!!busy||!revision.trim()||currentMismatch} onClick={()=>generate(true)}>修订</button></div><small>缩短课时请先修改教学需求，再重新确认并生成。</small></div>
-  <div className="card-footer"><button className="text-button" onClick={()=>setStep(1)}><ArrowLeft size={16}/>返回知识范围</button><button className="primary" onClick={()=>setStep(3)}>检查教案并导出<ArrowRight size={17}/></button></div>
+  {!embeddedWizard&&<div className="card-footer"><button className="text-button" onClick={()=>setStep(1)}><ArrowLeft size={16}/>返回知识范围</button><button className="primary" onClick={()=>setStep(3)}>检查教案并导出<ArrowRight size={17}/></button></div>}
  </>;
 }

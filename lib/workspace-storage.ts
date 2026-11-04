@@ -3,6 +3,7 @@ import { draftSchema, knowledgeSchema } from './workspace';
 import { freshBriefForNewLesson, normalizeBrief, lessonSchema, type Draft, type Brief, type Knowledge } from './lesson';
 import {emptyKnowledgeWizard, hasKnowledgeWizardProgress, type KnowledgeWizardState} from './knowledge-wizard';
 import type {SelectionConfirmations} from './selection-confirmations';
+import type {DesignWizardProgress} from './design-wizard';
 export const WORKSPACE_KEY = 'zhike-workspace';
 
 export type WorkspaceFlow = 'new' | 'working';
@@ -22,6 +23,7 @@ export type WorkspaceSnapshot = {
   knowledgeVerifyVisible?: boolean;
   knowledgeWizard?: KnowledgeWizardState;
   selectionConfirmations?: SelectionConfirmations;
+  designWizard?: DesignWizardProgress;
 };
 
 export function readWorkspaceSnapshot(): WorkspaceSnapshot | null {
