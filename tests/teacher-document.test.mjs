@@ -20,7 +20,8 @@ test('teacher lessons keep teaching tasks while graph originals move into the ev
  assert.deepEqual(teacherDocumentContext(draft).lesson.vocabulary,[]);assert.deepEqual(teacherDocumentContext(draft).lesson.grammar,[]);
 });
 test('teacher OOXML has required fonts, margins, three columns, black borders and cantSplit',async()=>{
- const teacher=await xml(fixture());
+ const blob=await makeWord(fixture(),'teacher',{author:'测试作者'}),bytes=await blob.arrayBuffer(),teacher=docxMember(bytes),styles=docxMember(bytes,'word/styles.xml');
+ assert.ok(styles.indexOf('</w:docDefaults>')<styles.indexOf('<w:style '),'Word defaults precede named styles');
  assert.ok(teacher.includes('w:eastAsia="KaiTi"'));assert.ok(teacher.includes('w:ascii="Times New Roman"'));
  assert.ok(teacher.includes('w:top="1440" w:right="1803" w:bottom="1440" w:left="1803"'));
  assert.ok(teacher.includes('w:sz w:val="44"'));assert.ok(teacher.includes('w:sz w:val="28"'));assert.ok(teacher.includes('w:sz w:val="24"'));
