@@ -62,3 +62,24 @@
 .card::after{content:'';position:absolute;inset:-1px;border-radius:inherit;padding:5px;pointer-events:none;background:linear-gradient(132deg,#fffffffa 0%,#ffffff33 16%,#89c3d599 32%,#ffffffed 48%,#538fa577 65%,#ffffffd9 83%,#89c3d599 95%,#ffffffee 100%);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
 .field input{background:#ffffff29;border-color:#375e6b4d;box-shadow:inset 0 1px 2px #ffffff4d,0 1px 0 #ffffff73}
 @media(max-width:440px){.card::before{border-radius:19px}}
+/* Fit desktop login to the visible height without cropping the form or city list. */
+@media(min-width:901px){
+ .page{--login-block-padding:clamp(16px,3svh,36px);padding-block:var(--login-block-padding)}
+ .stage{min-height:calc(100svh - 2 * var(--login-block-padding))}
+ .globeSpace{max-width:min(590px,calc(100svh - 238px))}
+}
+@media(min-width:901px) and (max-height:760px){
+ .formPane{padding-block:0}
+ .card{padding:24px 28px 22px}
+ .brand{margin-bottom:18px}
+ .heading{margin-bottom:18px}
+ .heading h1{font-size:26px}
+ .subtitle{margin-top:8px;line-height:1.7}
+ .field{margin-bottom:14px}
+ .field input,.submit{height:44px}
+ .passwordToggle{top:0;height:44px}
+ .guest{margin-top:8px}
+ .places{row-gap:16px}
+ .place{min-height:58px}
+ .time{font-size:22px}
+}

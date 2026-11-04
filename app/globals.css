@@ -2863,3 +2863,16 @@ main{max-width:1440px;margin:auto;padding:14px 44px 0;position:relative}
  .teacher-document-steps td:last-child{border-bottom:0}
  .teacher-document-steps td::before{content:attr(data-label);display:block;font-weight:700;margin-bottom:6px}
 }
+
+/* The same step action is available above and below long step content. */
+.design-step-heading.has-top-action,.knowledge-wizard-head.has-top-action{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 20px;align-items:center}
+.design-step-heading.has-top-action>p,.knowledge-wizard-head.has-top-action>p{grid-column:1/-1}
+.step-top-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-shrink:0}
+.step-top-actions button{white-space:nowrap;min-height:44px}
+.card-heading.has-top-action{flex-wrap:wrap}
+.card-heading.has-top-action .step-top-actions{margin-left:auto}
+@media(max-width:540px){
+ .design-step-heading.has-top-action,.knowledge-wizard-head.has-top-action{column-gap:12px}
+ .step-top-actions button{font-size:12px;padding:10px 14px}
+ .design-step-heading.has-top-action>p,.knowledge-wizard-head.has-top-action>p{margin-top:4px}
+}

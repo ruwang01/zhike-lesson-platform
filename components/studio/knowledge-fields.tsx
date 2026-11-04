@@ -138,6 +138,8 @@ export default function KnowledgeFields({embeddedWizard,columnKey,confirmations,
   else finishWizard();
  };
 
+ const advanceButton=()=> <button type="button" className="primary" onClick={()=>goNext(false)}>{step<totalSteps-1?<>下一步<ArrowRight size={16}/></>:<><Check size={16}/>完成知识指定</>}</button>;
+
  const goPrev=()=>{
   if(step===0)return;
   setSearchError('');
@@ -162,7 +164,7 @@ export default function KnowledgeFields({embeddedWizard,columnKey,confirmations,
  const updateItem=(item:Knowledge)=>onKnowledgeChange(prev=>prev.map(k=>k.id===item.id?item:k));
 
  return <div className="knowledge-fields knowledge-wizard">
-  {!embeddedWizard&&<div className="knowledge-wizard-head"><span className="knowledge-wizard-step">步骤 {step+1} / {totalSteps}</span><h3 className="knowledge-wizard-title">{column.label}</h3><p className="helper knowledge-wizard-hint">{isGraph?'Enter 搜索图谱 · Shift+Enter 换行 · 在卡片内勾选并确认':'Enter 或按钮写入本课需求标签'}</p></div>}
+  {!embeddedWizard&&<div className="knowledge-wizard-head has-top-action"><div><span className="knowledge-wizard-step">步骤 {step+1} / {totalSteps}</span><h3 className="knowledge-wizard-title">{column.label}</h3></div><div className="step-top-actions">{advanceButton()}</div><p className="helper knowledge-wizard-hint">{isGraph?'Enter 搜索图谱 · Shift+Enter 换行 · 在卡片内勾选并确认':'Enter 或按钮写入本课需求标签'}</p></div>}
   <label className="field knowledge-wizard-input"><span className="sr-only">{column.label}</span><textarea className="knowledge-wizard-textarea" rows={4} maxLength={1200} value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();void runSearch()}}} placeholder={'例如：'+column.example}/></label>
   <div className="knowledge-wizard-actions"><button type="button" className="secondary" disabled={searching} onClick={()=>void runSearch()}>{searching?<><LoaderCircle className="spin" size={16}/>搜索中…</>:isGraph?<><Search size={16}/>搜索图谱</>:<><Check size={16}/>确认加入标签</>}</button></div>
   {searchError&&<p className="helper knowledge-wizard-error" role="alert">{searchError}</p>}
@@ -185,7 +187,7 @@ export default function KnowledgeFields({embeddedWizard,columnKey,confirmations,
    <button type="button" className="text-button" disabled={step===0} onClick={goPrev}><ArrowLeft size={16}/>上一步</button>
    <div className="button-group">
     <button type="button" className="secondary" onClick={()=>goNext(true)}>跳过</button>
-    {step<totalSteps-1?<button type="button" className="primary" onClick={()=>goNext(false)}>下一步<ArrowRight size={16}/></button>:<button type="button" className="primary" onClick={()=>goNext(false)}><Check size={16}/>完成知识指定</button>}
+    {advanceButton()}
    </div>
   </div>}
  </div>;
