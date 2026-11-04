@@ -1,7 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import dynamic from 'next/dynamic';
+import { useRef, useState } from 'react';
+import {Eye,EyeOff,Volume2,VolumeX} from 'lucide-react';
+import LoginScene from './login-scene';
+import {useLoginSounds} from './use-login-sounds';
+import styles from './login.module.css';
 import { useRouter } from 'next/navigation';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
@@ -10,22 +13,7 @@ import { setLoggedIn, safeNext } from '@/lib/login-gate';
 
 gsap.registerPlugin(useGSAP);
 
-/**
- * 欢迎 / 登录页 —— 左表单 + 右真实地球
- *
- * 布局：全屏纯白背景，内容区限宽居中（max-w-5xl），
- *       左半区毛玻璃登录卡片，右半区可拖拽的 3D 地球。
- *
- * SSR 安全：EarthGlobe 通过 next/dynamic 的 ssr:false 只在浏览器加载
- *           （WebGL 依赖浏览器环境），服务端渲染时留空，不会白屏；
- *           表单与布局完全由服务端渲染输出。
- */
-
-// three-globe 依赖 WebGL，必须 ssr:false（仅在 Client Component 中有效）
-const EarthGlobe = dynamic(() => import('./earth-globe'), {
-  ssr: false,
-  loading: () => <div className="welcome-earth-loading" aria-hidden="true" />,
-});
+// Login presentation is scoped to this route. Authentication and guest entry stay unchanged.
 
 async function api(path: string, data?: unknown) {
   const r = await fetch(path, {
@@ -45,13 +33,15 @@ export default function WelcomeClient({ next }: { next?: string }) {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword,setShowPassword]=useState(false);
+  const {enabled:soundEnabled,play,toggle:toggleSound}=useLoginSounds();
 
   // 表单柔和淡入（与地球入场并行）
   useGSAP(() => {
     const root = scope.current;
     if (!root) return;
-    const card = root.querySelector('.welcome-card');
-    const globe = root.querySelector('.welcome-earth-wrap');
+    const card = root.querySelector('[data-login-card]');
+    const globe = root.querySelector('[data-login-globe]');
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       gsap.set([card, globe], { opacity: 1, y: 0, scale: 1 });
@@ -73,12 +63,15 @@ export default function WelcomeClient({ next }: { next?: string }) {
     if (busy) return;
     setError('');
     setBusy(true);
+    play('click');
     try {
       await api('/api/kg/login', { username, password });
+      play('success');
       setPassword('');
       setLoggedIn();
       router.replace(safeNext(next));
     } catch (err) {
+      play('error');
       setError(err instanceof Error ? err.message : '登录失败，请稍后重试。');
     } finally {
       setBusy(false);
@@ -91,66 +84,41 @@ export default function WelcomeClient({ next }: { next?: string }) {
   }
 
   return (
-    <main className="welcome-page" ref={scope}>
-      <div className="welcome-stage">
-      {/* ==================== 左栏：毛玻璃登录卡片 ==================== */}
-      <section className="welcome-pane-form">
-        <div className="welcome-card">
-          <div className="welcome-brand">
-            <span className="welcome-brand-mark"><TongueIcon size={22} /></span>
-            <span className="welcome-brand-name">智课<small>ZHÌKE STUDIO</small></span>
+    <main className={styles.page} ref={scope}>
+      <button type="button" className={styles.sound} onClick={toggleSound} aria-label={soundEnabled?'关闭声音':'开启声音'} aria-pressed={soundEnabled} title={soundEnabled?'关闭声音':'开启声音'}>
+        {soundEnabled?<Volume2 size={19}/>:<VolumeX size={19}/>}
+      </button>
+      <div className={styles.stage}>
+        <LoginScene/>
+        <section className={styles.formPane} aria-labelledby="login-heading">
+          <div className={styles.card} data-login-card>
+            <div className={styles.brand}>
+              <span className={styles.brandMark}><TongueIcon size={22}/></span>
+              <span className={styles.brandName}>智课<small>ZHÌKE STUDIO</small></span>
+            </div>
+            <div className={styles.heading}>
+              <p className={styles.eyebrow}>WELCOME TO ZHÌKE</p>
+              <h1 id="login-heading">欢迎使用智课</h1>
+              <p className={styles.subtitle}>连接你的国际中文教育知识图谱账号，让每一个教学环节都有据可依。</p>
+            </div>
+            <form onSubmit={submit}>
+              <label className={styles.field}>
+                图谱账号
+                <input name="username" autoComplete="username" required value={username} onChange={e=>setUsername(e.target.value)} placeholder="kg.chineseplus.net 账号"/>
+              </label>
+              <label className={styles.field}>
+                密码
+                <span className={styles.password}>
+                  <input id="login-password" aria-label="密码" name="password" type={showPassword?'text':'password'} autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="请输入密码"/>
+                  <button type="button" className={styles.passwordToggle} aria-controls="login-password" aria-label={showPassword?'隐藏密码':'显示密码'} aria-pressed={showPassword} onClick={()=>setShowPassword(value=>!value)}>{showPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button>
+                </span>
+              </label>
+              {error&&<div className={styles.error} role="alert">{error}</div>}
+              <button className={styles.submit} type="submit" disabled={busy}>{busy?'正在连接知识图谱…':'登录并进入工作台'}</button>
+              <button className={styles.guest} type="button" onClick={enter} disabled={busy}>暂不登录，先进入工作台</button>
+            </form>
           </div>
-
-          <div className="welcome-heading">
-            <p className="eyebrow">WELCOME TO ZHÌKE</p>
-            <h1>欢迎使用智课</h1>
-            <p className="welcome-sub">连接你的国际中文教育知识图谱账号，让每一个教学环节都有据可依。</p>
-          </div>
-
-          <form onSubmit={submit}>
-            <label className="field">
-              图谱账号
-              <input
-                name="username"
-                autoComplete="username"
-                required
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                placeholder="kg.chineseplus.net 账号"
-              />
-            </label>
-            <label className="field">
-              密码
-              <input
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="请输入密码"
-              />
-            </label>
-
-            {error && <div className="message error" role="alert">{error}</div>}
-
-            <button className="welcome-submit" type="submit" disabled={busy}>
-              {busy ? '正在连接知识图谱…' : '登录并进入工作台'}
-            </button>
-
-            <button className="welcome-ghost" type="button" onClick={enter} disabled={busy}>
-              暂不登录，先进入工作台
-            </button>
-          </form>
-        </div>
-      </section>
-
-      {/* ==================== 右栏：真实地球 ==================== */}
-      <section className="welcome-pane-art" aria-hidden="true">
-        <div className="welcome-earth-wrap">
-          <EarthGlobe size={460} />
-        </div>
-      </section>
+        </section>
       </div>
     </main>
   );

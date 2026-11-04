@@ -1,165 +1,90 @@
 'use client';
-
-import { useEffect, useRef } from 'react';
-import Globe from 'react-globe.gl';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import Globe,{type GlobeMethods} from 'react-globe.gl';
 import * as THREE from 'three';
+import {loginPlaces,type LoginPlace} from './places';
+import styles from './login.module.css';
 
-/**
- * 真实地球
- *
- * 基于 react-globe.gl（封装 three-globe + three）渲染：
- *   · 卫星贴图：earth-blue-marble（深蓝海洋 + 绿色大陆）
- *   · 地形凹凸：earth-topology（bump map，让山脉有立体感）
- *   · 云层：独立球壳，贴 clouds.png，缓慢自转
- *
- * 不开大气光晕（showAtmosphere=false），保持边缘干净。
- *
- * 交互：
- *   · 拖拽旋转 —— globe.gl 内部用 OrbitControls，自带阻尼惯性
- *   · 空闲自转 —— controls.autoRotate，松手后自动接管
- *
- * 贴图全部走 CDN 自动拉取，无需本地下载。
- */
-
-/** 卫星贴图：深蓝海洋 + 绿色大陆 */
-const EARTH_IMG = 'https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg';
-/** 地形凹凸贴图 */
-const BUMPS_IMG = 'https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-topology.png';
-/** 云层贴图 */
-const CLOUDS_IMG = 'https://cdn.jsdelivr.net/npm/three-globe/example/clouds/clouds.png';
-
-/** 云层相对球面的抬升高度（比例） */
-const CLOUDS_ALT = 0.006;
-/** 云层每帧自转角度（度） */
-const CLOUDS_ROT_SPEED = -0.006;
-
+const EARTH_IMG='/login/earth-blue-marble.jpg';
+const BUMPS_IMG='/login/earth-topology.png';
+const CLOUDS_IMG='/login/clouds.png';
+const points=[...loginPlaces];
 export interface EarthGlobeProps {
-  /** 画布边长（像素） */
-  size?: number;
+  size:number;
+  place:LoginPlace;
+  onReady:(ready:boolean)=>void;
+  onSelectPlace:(place:LoginPlace)=>void;
 }
-
-export default function EarthGlobe({ size = 460 }: EarthGlobeProps) {
-  const globeRef = useRef<any>(null);
-
-  useEffect(() => {
-    const globe = globeRef.current;
-    if (!globe) return;
-
-    const scene = globe.scene();
-    const camera = globe.camera();
-    const renderer = globe.renderer();
-    const controls = globe.controls();
-
-    // ---- 灯光 ----
-    // globe.gl 默认塞的是为「旧版光照模型」调的强度
-    // （AmbientLight(0xcccccc, π) + DirectionalLight(0xffffff, 0.6π)），
-    // 在 three r155+ 的物理光照下会严重过曝成一片白。
-    // 这里用 globe.lights() 整体替换成新版模型下的合理强度：
-    // 环境光抬高让深海暗部通透，平行光保证大陆轮廓清晰。
-    const sun = new THREE.DirectionalLight(0xffffff, 1.15);
-    sun.position.set(-3, 1, 4);
-    globe.lights([
-      new THREE.AmbientLight(0xffffff, 1.35),
-      sun,
-    ]);
-
-    // ---- 云层：略大于球面的透明球壳，独立自转 ----
-    // clouds.png 是「调色板 + tRNS」PNG：RGB 恒为白，透明度只存在于
-    // alpha 通道里。直接当 map 用时 three 的纹理上传不一定带上这段
-    // alpha，结果是一颗不透明白球把整个地球盖住。
-    // 这里先把它画到 2D canvas 上，取出 alpha 通道转成灰度图，
-    // 再交给 alphaMap（three 的 alphaMap 取灰度图的绿通道）。
-    const radius = globe.getGlobeRadius();
-    const clouds = new THREE.Mesh(
-      new THREE.SphereGeometry(radius * (1 + CLOUDS_ALT), 72, 72),
-      new THREE.MeshPhongMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 1,
-        depthWrite: false,
-      }),
-    );
-    clouds.visible = false;
-
-    let disposed = false;
-    new THREE.TextureLoader().load(CLOUDS_IMG, (texture) => {
-      if (disposed) {
-        texture.dispose();
-        return;
-      }
-      const alphaMap = buildAlphaMap(texture.image as HTMLImageElement);
-      texture.dispose();
-      if (!alphaMap) return;
-
-      const mat = clouds.material as THREE.MeshPhongMaterial;
-      mat.alphaMap = alphaMap;
-      mat.needsUpdate = true;
-      clouds.visible = true;
-      scene.add(clouds);
+export default function EarthGlobe({size,place,onReady,onSelectPlace}:EarthGlobeProps){
+  const globeRef=useRef<GlobeMethods|undefined>(undefined);
+  const [ready,setReady]=useState(false);
+  const hasFocused=useRef(false);
+  const surface=useMemo(()=>{
+    const material=new THREE.MeshPhongMaterial({shininess:8,specular:0x27475b});
+    material.onBeforeCompile=shader=>{
+      shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`
+        #include <map_fragment>
+        // Lift the very dark satellite ocean while keeping land and cloud texture detail.
+        float ocean = smoothstep(1.05, 1.6, diffuseColor.b / (max(diffuseColor.r, diffuseColor.g) + 0.001));
+        diffuseColor.rgb = pow(diffuseColor.rgb, vec3(0.80)) * 1.20;
+        diffuseColor.rgb += ocean * vec3(0.012, 0.050, 0.100);
+      `);
+    };
+    material.customProgramCacheKey=()=> 'login-daylight-ocean-v1';
+    return material;
+  },[]);
+  useEffect(()=>()=>{surface.map?.dispose();surface.bumpMap?.dispose();surface.dispose()},[surface]);
+  const loaded=useCallback(()=>{setReady(true);onReady(true)},[onReady]);
+  useEffect(()=>{
+    const globe=globeRef.current;if(!globe||!ready)return;
+    const renderer=globe.renderer(),controls=globe.controls(),scene=globe.scene();
+    const sun=new THREE.DirectionalLight(0xffffff,1.7);sun.position.set(-3,1,4);
+    globe.lights([new THREE.AmbientLight(0xffffff,2.15),sun]);
+    renderer.toneMapping=THREE.NoToneMapping;renderer.setClearColor(0xffffff,0);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.75));
+    controls.enableDamping=true;controls.dampingFactor=.08;
+    controls.enablePan=false;controls.enableZoom=false;controls.autoRotate=false;
+    controls.enableRotate=window.matchMedia('(pointer:fine)').matches;
+    const stopTurn=()=>{const pov=globe.pointOfView();globe.pointOfView(pov,0)};
+    const contextLost=(event:Event)=>{event.preventDefault();onReady(false)};
+    controls.addEventListener('start',stopTurn);
+    renderer.domElement.addEventListener('webglcontextlost',contextLost);
+    const clouds=new THREE.Mesh(new THREE.SphereGeometry(globe.getGlobeRadius()*1.006,64,64),new THREE.MeshPhongMaterial({color:0xffffff,transparent:true,depthWrite:false}));
+    clouds.visible=false;let disposed=false;
+    new THREE.TextureLoader().load(CLOUDS_IMG,texture=>{
+      if(disposed){texture.dispose();return}
+      const alphaMap=buildAlphaMap(texture.image as HTMLImageElement);texture.dispose();if(!alphaMap)return;
+      clouds.material.alphaMap=alphaMap;clouds.material.needsUpdate=true;
+      clouds.visible=true;scene.add(clouds);
     });
-
-    // ---- 相机：拉近让地球在右栏里更大 ----
-    const cam = camera as THREE.PerspectiveCamera;
-    cam.position.set(0, 0, radius * 2.4);
-    cam.lookAt(0, 0, 0);
-
-    // ---- 渲染：不做色调映射，颜色直接按 sRGB 输出，最通透鲜艳 ----
-    // ACES Filmic 会压掉高光、让整颗球偏灰偏暗；这里关掉它，
-    // 改由灯光强度本身控制明暗，避免二次压暗。
-    renderer.toneMapping = THREE.NoToneMapping;
-    renderer.setClearColor(0xffffff, 0);
-
-    // ---- 控制器：拖拽 + 阻尼惯性 + 空闲自转 ----
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
-    controls.enablePan = false;
-    controls.minDistance = radius * 1.85;
-    controls.maxDistance = radius * 4.5;
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.35;
-    controls.update();
-
-    // ---- 云层独立旋转 ----
-    let raf = 0;
-    const rotateClouds = () => {
-      clouds.rotation.y += CLOUDS_ROT_SPEED * (Math.PI / 180);
-      raf = requestAnimationFrame(rotateClouds);
+    return()=>{
+      disposed=true;controls.removeEventListener('start',stopTurn);
+      renderer.domElement.removeEventListener('webglcontextlost',contextLost);
+      scene.remove(clouds);clouds.geometry.dispose();clouds.material.alphaMap?.dispose();clouds.material.dispose();
     };
-    raf = requestAnimationFrame(rotateClouds);
-
-    return () => {
-      disposed = true;
-      cancelAnimationFrame(raf);
-      scene.remove(clouds);
-      clouds.geometry.dispose();
-      const mat = clouds.material as THREE.MeshPhongMaterial;
-      mat.alphaMap?.dispose();
-      mat.dispose();
-    };
-  }, []);
-
-  return (
-    <div className="welcome-earth" style={{ width: size, height: size }} aria-hidden="true">
-      <Globe
-        ref={globeRef}
-        width={size}
-        height={size}
-        backgroundColor="rgba(0,0,0,0)"
-        globeImageUrl={EARTH_IMG}
-        bumpImageUrl={BUMPS_IMG}
-        showAtmosphere={false}
-        showGraticules={false}
-        enablePointerInteraction={false}
-      />
-    </div>
-  );
+  },[ready,onReady]);
+  useEffect(()=>{
+    const globe=globeRef.current;if(!globe||!ready)return;
+    const reduced=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+    const initial=!hasFocused.current;hasFocused.current=true;
+    globe.pointOfView({lat:initial?24:place.lat,lng:place.lng,altitude:1.55},reduced||initial?0:850);
+  },[place,ready]);
+  return <div className={styles.globe} style={{opacity:ready?1:0}} aria-hidden="true">
+    <Globe ref={globeRef} width={size} height={size} backgroundColor="rgba(0,0,0,0)"
+      globeImageUrl={EARTH_IMG} bumpImageUrl={BUMPS_IMG} onGlobeReady={loaded}
+      globeMaterial={surface}
+      showAtmosphere atmosphereColor="#b4d9e4" atmosphereAltitude={.055}
+      showGraticules={false} animateIn={false}
+      pointsData={points} pointLat="lat" pointLng="lng" pointAltitude={.018}
+      pointRadius={point=>(point as LoginPlace).id===place.id ? .82 : .5}
+      pointColor={point=>(point as LoginPlace).id===place.id?'#087f71':'#f5fbfc'}
+      pointsTransitionDuration={0} pointLabel={()=>''}
+      onPointClick={point=>onSelectPlace(point as LoginPlace)}
+    />
+  </div>;
 }
 
-/**
- * 把一张「透明度只存在于 alpha 通道」的贴图，转成 three 的 alphaMap
- * （alphaMap 取灰度图的绿通道）。
- * 返回 null 表示这张图没有可用的 alpha 信息。
- */
+// Preserve the existing alpha-map conversion for the vendor cloud texture.
 function buildAlphaMap(image: HTMLImageElement): THREE.CanvasTexture | null {
   const w = 2048;
   const h = 1024;
