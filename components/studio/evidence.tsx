@@ -3,6 +3,8 @@ import { Download,ShieldCheck,AlertCircle,Check } from 'lucide-react';
 import { standardNames,type Knowledge } from '@/lib/lesson';
 import {lexicalCategories,lexicalSourceLabel,lexicalDisplayGroups} from '@/lib/lexical';
 import { exampleChoices,meaningChoices,groundedBlocks } from '@/lib/evidence';
+import {confirmKnowledge} from '@/lib/confirm-knowledge';
+import {ExerciseCard} from '@/components/studio/exercise-card';
 import {GrammarQuestionPicker} from './grammar-questions';
 import { download } from '@/lib/export';
 /** 按图谱原始序号逐条选择释义，保留原文；未选择时由生成接口使用默认原文。 */
@@ -26,6 +28,19 @@ export function EvidencePicker({item,onChange,standard,searchHint}:{item:Knowled
 
 
  const stdName=standardNames[standard||item.evidence?.standard||'']||'';
+ if(item.scopeConfirmed){
+  const meaning=item.kind==='Character'&&item.characterTeachingMeaning?item.characterTeachingMeaning:confirmKnowledge(item).selectedMeaning;
+  const features=(item.lexicalFeatures||[]).filter(feature=>item.selectedFeatureIds?.includes(feature.id));
+  const questions=(item.grammarQuestions||[]).filter(question=>item.selectedQuestionIds?.includes(question.id));
+  return <div className="kb-card selection-summary" aria-label={item.name+'已确认选择'}>
+   <section className="kb-block"><h4 className="kb-title">{item.kind==='Grammar'?'已确认语法内容':item.kind==='Character'&&item.characterTeachingMeaning?'已确认讲解释义':'已确认释义'}</h4><p className="kb-character-original">{meaning||'未选择释义'}</p></section>
+   <section className="kb-block"><h4 className="kb-title">已选例句</h4>{item.selectedExamples?.length?<ul>{item.selectedExamples.map((sentence,index)=><li key={index}>{sentence}</li>)}</ul>:<p className="helper">未选择例句</p>}</section>
+   {!!features.length&&<section className="kb-block"><h4 className="kb-title">已选词汇扩展</h4>{features.map(feature=><p key={feature.id}>{lexicalCategories[feature.category]}：{feature.value}{feature.detail&&' · '+feature.detail}</p>)}</section>}
+   {!!questions.length&&<section className="kb-block"><h4 className="kb-title">已选关联例题</h4>{questions.map((question,index)=><ExerciseCard key={question.id} kindLabel={item.name} index={index+1} question={question}/>)}</section>}
+   <button type="button" className="secondary" onClick={()=>onChange({...item,scopeConfirmed:false})}>重新选择</button>
+  </div>;
+ }
+
  return (
  <div className="kb-card">
    {/* ---------- 区块 1：图谱原始释义 ---------- */}
@@ -88,7 +103,7 @@ export function EvidencePicker({item,onChange,standard,searchHint}:{item:Knowled
        className="kb-confirm"
        type="button"
        disabled={!canConfirm}
-       onClick={()=>onChange({...item,selectedMeaning:(item.selectedMeaning||rawMeaning||'').slice(0,2500),selectedExamples:(item.selectedExamples||[]).slice(0,5),scopeConfirmed:true})}
+       onClick={()=>onChange(confirmKnowledge(item))}
      >
        {item.scopeConfirmed?<><Check size={14}/>已确认本课选择</>:item.kind==='Grammar'?'确认本课选择':'确认此词义'}
      </button>

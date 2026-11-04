@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { draftSchema, knowledgeSchema } from './workspace';
 import { freshBriefForNewLesson, normalizeBrief, lessonSchema, type Draft, type Brief, type Knowledge } from './lesson';
 import {emptyKnowledgeWizard, hasKnowledgeWizardProgress, type KnowledgeWizardState} from './knowledge-wizard';
+import type {SelectionConfirmations} from './selection-confirmations';
 export const WORKSPACE_KEY = 'zhike-workspace';
 
 export type WorkspaceFlow = 'new' | 'working';
@@ -20,6 +21,7 @@ export type WorkspaceSnapshot = {
   tab?: number;
   knowledgeVerifyVisible?: boolean;
   knowledgeWizard?: KnowledgeWizardState;
+  selectionConfirmations?: SelectionConfirmations;
 };
 
 export function readWorkspaceSnapshot(): WorkspaceSnapshot | null {
@@ -51,7 +53,7 @@ export function writeWorkspaceSnapshot(snap: Omit<WorkspaceSnapshot, 'version'>)
 /** 新建教案：清空知识指定与核验，保留历史版本列表（可选）。 */
 export function emptyWorkspaceForNewLesson(history: WorkspaceSnapshot['history'] = []): WorkspaceSnapshot {
   const brief = freshBriefForNewLesson();
-  return { version: 2, brief, knowledge: [], draft: null, history, flow: 'new', active: false, step: 0, tab: 0, knowledgeVerifyVisible: false, knowledgeWizard: emptyKnowledgeWizard() };
+  return { version: 2, brief, knowledge: [], draft: null, history, flow: 'new', active: false, step: 0, tab: 0, knowledgeVerifyVisible: false, knowledgeWizard: emptyKnowledgeWizard(), selectionConfirmations: {} };
 }
 
 // Local editing snapshots accept unfinished fields. API/import validation stays strict.

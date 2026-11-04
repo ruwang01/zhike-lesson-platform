@@ -6,6 +6,8 @@ import {KnowledgeItem} from '@/components/studio/knowledge-item';
 import {IdiomMatches} from '@/components/studio/idiom-matches';
 import {GrammarRecommendations} from '@/components/studio/grammar-recommendations';
 import {CulturalRecommendations} from '@/components/studio/cultural-recommendations';
+import {SelectionCard} from '@/components/studio/selection-card';
+import type {SelectionConfirmations,SelectionKey} from '@/lib/selection-confirmations';
 import type {KnowledgeWizardState} from '@/lib/knowledge-wizard';
 import {chooseIdiom} from '@/lib/idioms';
 
@@ -47,6 +49,8 @@ async function searchGraphApi(terms:string[],standard:string){
 }
 
 export type KnowledgeFieldsProps={
+ confirmations:SelectionConfirmations;
+ onConfirmationChange:(key:SelectionKey,confirmed:boolean)=>void;
  wizard:KnowledgeWizardState;
  onWizardChange:(updater:(previous:KnowledgeWizardState)=>KnowledgeWizardState)=>void;
  brief:Brief;
@@ -64,7 +68,7 @@ export type KnowledgeFieldsProps={
  onWizardComplete?:()=>void;
 };
 
-export default function KnowledgeFields({wizard,onWizardChange,brief,standard,knowledge,connected,username,onChange,onKnowledgeChange,onCulturalTopicsChange,onStepSearch,onGrammarMatched,onNeedConnect,onSpecifyActivity,onWizardComplete}:KnowledgeFieldsProps){
+export default function KnowledgeFields({confirmations,onConfirmationChange,wizard,onWizardChange,brief,standard,knowledge,connected,username,onChange,onKnowledgeChange,onCulturalTopicsChange,onStepSearch,onGrammarMatched,onNeedConnect,onSpecifyActivity,onWizardComplete}:KnowledgeFieldsProps){
  const step=wizard.step;
  const tags=useMemo(()=>tagsFromGroups(getKnowledgeGroups(brief)),[brief.knowledgeGroups,brief.terms]);
  const activeKey=knowledgeColumns[step].key;
@@ -163,15 +167,15 @@ export default function KnowledgeFields({wizard,onWizardChange,brief,standard,kn
 
   {(key==='characters'||key==='vocabulary')&&stepItems.length>0&&<div className="knowledge-wizard-cards">{stepItems.map(item=><KnowledgeItem key={item.id} item={item} standard={standard} defaultOpen={!item.scopeConfirmed} searchHint="请先在本步点击「搜索图谱」。" onChange={updateItem}/>)}</div>}
 
-  {key==='vocabulary'&&<div className="wizard-step-extra wizard-idiom-panel"><h4 className="wizard-step-extra-title">成语匹配</h4><IdiomMatches embedded brief={brief} connected={connected} username={username} knowledge={knowledge} onChoose={(item,checked)=>{if(checked)persistTags({...tags,vocabulary:[...new Set([...tags.vocabulary,item.name])]});onKnowledgeChange(old=>chooseIdiom(old,item,checked));if(checked)setStepCandidateIds(ids=>[...new Set([...ids,item.id])])}}/></div>}
+  {key==='vocabulary'&&<div className="wizard-step-extra wizard-idiom-panel"><h4 className="wizard-step-extra-title">成语匹配</h4><SelectionCard title="成语匹配" confirmed={!!confirmations.idioms} onConfirm={()=>onConfirmationChange('idioms',true)} onReselect={()=>onConfirmationChange('idioms',false)} summary={<ul>{knowledge.filter(item=>item.kind==='Idiom'&&item.role!=='排除').map(item=><li key={item.id}>{item.name}</li>)}</ul>}><IdiomMatches embedded brief={brief} connected={connected} username={username} knowledge={knowledge} onChoose={(item,checked)=>{if(checked)persistTags({...tags,vocabulary:[...new Set([...tags.vocabulary,item.name])]});onKnowledgeChange(old=>chooseIdiom(old,item,checked));if(checked)setStepCandidateIds(ids=>[...new Set([...ids,item.id])])}}/></SelectionCard></div>}
 
   {idiomStepItems.length>0&&<div className="knowledge-wizard-cards">{idiomStepItems.map(item=><KnowledgeItem key={item.id} item={item} standard={standard} defaultOpen={!item.scopeConfirmed} searchHint="请先勾选上方成语。" onChange={updateItem}/>)}</div>}
 
-  {key==='grammar'&&<div className="wizard-step-extra"><h4 className="wizard-step-extra-title">语法匹配与相关推荐</h4><GrammarRecommendations embedded brief={brief} connected={connected} username={username} knowledge={knowledge} onMatched={items=>{onGrammarMatched(items);setStepCandidateIds(ids=>[...new Set([...ids,...items.map(i=>i.id)])]);const names=[...new Set([...(tags.grammar||[]),...items.map(i=>i.name)])].slice(0,20);onChange(groupsFromTags({...tags,grammar:names}))}} onChoose={(item,checked)=>{onKnowledgeChange(old=>old.some(node=>node.id===item.id)?old.map(node=>node.id===item.id?{...node,role:checked?'拓展':'排除'}:node):checked?[...old,item]:old);if(checked)setStepCandidateIds(ids=>[...new Set([...ids,item.id])])}}/></div>}
+  {key==='grammar'&&<div className="wizard-step-extra"><h4 className="wizard-step-extra-title">语法匹配与相关推荐</h4><SelectionCard title="语法匹配与相关推荐" confirmed={!!confirmations.grammar} onConfirm={()=>onConfirmationChange('grammar',true)} onReselect={()=>onConfirmationChange('grammar',false)} summary={<ul>{knowledge.filter(item=>item.kind==='Grammar'&&item.role!=='排除').map(item=><li key={item.id}>{item.name}</li>)}</ul>}><GrammarRecommendations embedded brief={brief} connected={connected} username={username} knowledge={knowledge} onMatched={items=>{onGrammarMatched(items);setStepCandidateIds(ids=>[...new Set([...ids,...items.map(i=>i.id)])]);const names=[...new Set([...(tags.grammar||[]),...items.map(i=>i.name)])].slice(0,20);onChange(groupsFromTags({...tags,grammar:names}))}} onChoose={(item,checked)=>{onKnowledgeChange(old=>old.some(node=>node.id===item.id)?old.map(node=>node.id===item.id?{...node,role:checked?'拓展':'排除'}:node):checked?[...old,item]:old);if(checked)setStepCandidateIds(ids=>[...new Set([...ids,item.id])])}}/></SelectionCard></div>}
 
   {key==='grammar'&&stepItems.length>0&&<div className="knowledge-wizard-cards">{stepItems.map(item=><KnowledgeItem key={item.id} item={item} standard={standard} defaultOpen={!item.scopeConfirmed} searchHint="请先在本步搜索或等待语法匹配。" onChange={updateItem}/>)}</div>}
 
-  {key==='culture'&&<div className="wizard-step-extra"><h4 className="wizard-step-extra-title">相关文化主题词</h4><CulturalRecommendations embedded brief={brief} connected={connected} username={username} onChange={onCulturalTopicsChange}/></div>}
+  {key==='culture'&&<div className="wizard-step-extra"><h4 className="wizard-step-extra-title">相关文化主题词</h4><SelectionCard title="文化主题" confirmed={!!confirmations.culture} onConfirm={()=>onConfirmationChange('culture',true)} onReselect={()=>onConfirmationChange('culture',false)} summary={<ul>{(brief.culturalTopics||[]).map(item=><li key={item.id}>{item.name}</li>)}</ul>}><CulturalRecommendations embedded brief={brief} connected={connected} username={username} onChange={onCulturalTopicsChange}/></SelectionCard></div>}
 
   {(tags[key]||[]).length>0&&!isGraph&&<div className="knowledge-tag-row knowledge-tag-row-step">{(tags[key]||[]).map(name=><span className="knowledge-tag" key={name}>{name}<button type="button" aria-label={'移除'+name} onClick={()=>removeTag(key,name)}><X size={14}/></button></span>)}</div>}
 

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect,useId,useRef,useState } from 'react';
 import { ChevronDown, Check, LayoutTemplate, SlidersHorizontal } from 'lucide-react';
 import {
  templatePresets,
@@ -26,13 +26,20 @@ export default function TemplateConfigPanel({
  value,
  onChange,
  defaultOpen = false,
+ confirmed,onConfirmed,onReselect,
 }: {
+ confirmed:boolean;
+ onConfirmed:()=>void;
+ onReselect:()=>void;
  value: TemplateConfig;
  onChange: (next: TemplateConfig) => void;
  /** 弹窗形态下直接展开，折叠态没有意义。 */
  defaultOpen?: boolean;
 }) {
  const [open, setOpen] = useState(defaultOpen);
+ const previouslyConfirmed=useRef(confirmed);
+ const bodyId=useId(),instructionId=useId();
+ useEffect(()=>{if(confirmed&&!previouslyConfirmed.current)setOpen(false);previouslyConfirmed.current=confirmed},[confirmed]);
  const enabled = enabledTemplateModules(value);
  const customized = isCustomizedTemplate(value);
  const preset = templatePresets.find(p => p.id === value.preset) ?? templatePresets[0];
@@ -53,7 +60,7 @@ export default function TemplateConfigPanel({
       type="button"
       className="template-config-trigger"
       aria-expanded={open}
-      aria-controls="template-config-body"
+      aria-controls={bodyId}
       onClick={() => setOpen(o => !o)}
     >
       <span className="template-config-icon"><LayoutTemplate size={17}/></span>
@@ -69,8 +76,8 @@ export default function TemplateConfigPanel({
     </button>
 
     {open && (
-      <div className="template-config-body" id="template-config-body">
-        <section className="template-config-section">
+      <div className="template-config-body" id={bodyId}>
+        {confirmed?<div className="selection-summary"><p>{preset.label}</p><ul>{templateModules.filter(module=>value.modules[module.key]).map(module=><li key={module.key}>{module.label}</li>)}</ul>{value.customInstruction&&<p>{value.customInstruction}</p>}<button type="button" className="secondary" onClick={onReselect}>重新选择</button></div>:<><section className="template-config-section">
           <span className="template-config-label"><SlidersHorizontal size={13}/>预设模板</span>
           <div className="template-preset-grid" role="radiogroup" aria-label="预设模板">
             {templatePresets.map(p => (
@@ -116,11 +123,11 @@ export default function TemplateConfigPanel({
         </section>
 
         <section className="template-config-section">
-          <label className="template-config-label" htmlFor="template-custom-instruction">
+          <label className="template-config-label" htmlFor={instructionId}>
             特别要求
           </label>
           <textarea
-            id="template-custom-instruction"
+            id={instructionId}
             rows={3}
             maxLength={1000}
             value={value.customInstruction}
@@ -130,7 +137,7 @@ export default function TemplateConfigPanel({
           <p className="helper">
             特别要求会随教学需求一起提交，供生成环节参考；不会覆盖已核验的知识内容。
           </p>
-        </section>
+        </section><div className="selection-card-actions"><button type="button" className="primary" onClick={()=>{onConfirmed();setOpen(false)}}>确认选择</button></div></>}
       </div>
     )}
   </div>

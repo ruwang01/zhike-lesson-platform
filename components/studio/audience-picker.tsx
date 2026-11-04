@@ -14,7 +14,11 @@ export default function AudiencePicker({
   value,
   standard,
   onChange,
+  confirmed, onConfirmed, onReselect,
 }: {
+  confirmed:boolean;
+  onConfirmed:()=>void;
+  onReselect:()=>void;
   value: Audience;
   standard: string;
   onChange: (next: Audience) => void;
@@ -22,6 +26,7 @@ export default function AudiencePicker({
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Audience>(value);
   const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(()=>{if(confirmed)setOpen(false)},[confirmed]);
 
   // 打开时把当前值复制到草稿，取消不影响已保存的值。
   useEffect(() => {
@@ -62,6 +67,7 @@ export default function AudiencePicker({
       age: draft.age.trim(),
       level: draft.level,
     });
+    onConfirmed();
     setOpen(false);
   }
 
@@ -80,7 +86,7 @@ export default function AudiencePicker({
 
       {open && (
         <div className="audience-panel" role="dialog" aria-label="教学对象">
-          <div className="audience-panel-grid">
+          {confirmed?<div className="selection-summary"><p>{summary||'未指定教学对象'}</p><button type="button" className="secondary" onClick={onReselect}>重新选择</button></div>:<><div className="audience-panel-grid">
             <label className="field">
               学生国家／地区
               <input
@@ -128,7 +134,7 @@ export default function AudiencePicker({
               <Check size={15} />
               确认
             </button>
-          </div>
+          </div></>}
         </div>
       )}
     </div>

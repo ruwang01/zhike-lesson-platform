@@ -24,7 +24,7 @@ export function useWorkspaceAutosave(snapshot: Snapshot, ready: boolean) {
     timer.current = setTimeout(() => flush(), 350);
     return () => {if (timer.current !== null) clearTimeout(timer.current)};
   }, [ready, snapshot.brief, snapshot.knowledge, snapshot.draft, snapshot.history,
-      snapshot.flow, snapshot.active, snapshot.step, snapshot.tab, snapshot.knowledgeVerifyVisible, snapshot.knowledgeWizard, flush]);
+      snapshot.flow, snapshot.active, snapshot.step, snapshot.tab, snapshot.knowledgeVerifyVisible, snapshot.knowledgeWizard, snapshot.selectionConfirmations, flush]);
   useEffect(() => {
     if (!ready) return;
     const save = () => {flush()};
