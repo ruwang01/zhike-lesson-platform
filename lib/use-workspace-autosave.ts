@@ -1,10 +1,13 @@
 'use client';
 import {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react';
+import {scopedStorageKey} from './owner-storage';
+import {hasWorkspaceProgress} from './workspace-storage';
 import {saveLessonRecord} from './lesson-records';
 import {writeWorkspaceSnapshot, type WorkspaceSnapshot} from './workspace-storage';
 type Snapshot = Omit<WorkspaceSnapshot, 'version'>;
 export function useWorkspaceAutosave(snapshot: Snapshot, ready: boolean) {
   const latest = useRef<Snapshot | null>(null);
+  const cloudQueue=useRef(Promise.resolve());
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saved, setSaved] = useState(false);
   const [saveState,setSaveState]=useState<'saving'|'saved'|'error'>('saving');
@@ -15,7 +18,9 @@ export function useWorkspaceAutosave(snapshot: Snapshot, ready: boolean) {
     if (latest.current) {
       let ok=false;
       try{saveLessonRecord({version:2,...latest.current});ok=writeWorkspaceSnapshot(latest.current)}catch{}
-      setSaveState(ok?'saved':'error');
+      if(ok&&latest.current&&hasWorkspaceProgress(latest.current)&&window.sessionStorage.getItem('zhike-owner')){
+       const writing=latest.current;const pendingKey=scopedStorageKey('zhike-pending:'+writing.recordId),pendingValue=JSON.stringify(writing);window.localStorage.setItem(pendingKey,pendingValue);setSaveState('saving');cloudQueue.current=cloudQueue.current.catch(()=>{}).then(async()=>{const response=await fetch('/api/workspaces',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:writing.recordId,snapshot:writing}),keepalive:JSON.stringify(writing).length<50000});if(!response.ok)throw Error('保存失败');if(window.localStorage.getItem(pendingKey)===pendingValue)window.localStorage.removeItem(pendingKey)}).then(()=>{if(latest.current===writing)setSaveState('saved')}).catch(()=>{if(latest.current===writing)setSaveState('error')});
+      }else setSaveState(ok?'saved':'error');
       setSaved(ok);
       return ok;
     }

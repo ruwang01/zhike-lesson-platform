@@ -1,3 +1,4 @@
+import {scopedStorageKey} from './owner-storage';
 import { draftSchema } from './workspace';
 
 /* ------------------------------------------------------------------ *
@@ -115,7 +116,7 @@ export function slotLabel(key: SlotKey): string {
 export function loadSchedule(): ScheduleData {
   if (typeof window === 'undefined') return {};
   try {
-    const raw = window.localStorage.getItem(SCHEDULE_KEY);
+    const raw = window.localStorage.getItem(scopedStorageKey(SCHEDULE_KEY));
     if (!raw) return {};
     const parsed = JSON.parse(raw) as unknown;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
@@ -151,7 +152,7 @@ export function loadSchedule(): ScheduleData {
 export function saveSchedule(data: ScheduleData): void {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(SCHEDULE_KEY, JSON.stringify(data));
+    window.localStorage.setItem(scopedStorageKey(SCHEDULE_KEY), JSON.stringify(data));
   } catch {
     /* 隐私模式下可能写入失败，忽略即可 */
   }
@@ -180,7 +181,7 @@ export function loadLessonPool(): LessonItem[] {
   const seen = new Set<string>();
 
   try {
-    const raw = window.localStorage.getItem(WORKSPACE_KEY);
+    const raw = window.localStorage.getItem(scopedStorageKey(WORKSPACE_KEY));
     if (raw) {
       const stored = JSON.parse(raw) as unknown;
       if (stored && typeof stored === 'object') {
@@ -244,5 +245,5 @@ export function countPlaced(data: ScheduleData): number {
 
 /** Date-specific views preserve the original current-week schedule during migration. */
 export function mondayKey(date=new Date()):string {const d=new Date(date);d.setDate(d.getDate()-(d.getDay()+6)%7);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-export function loadWeekSchedule(week:string):ScheduleData {try{const all=JSON.parse(window.localStorage.getItem('zhike-schedule-weeks-v1')||'{}');return all[week]|| (week===mondayKey()?loadSchedule():{})}catch{return week===mondayKey()?loadSchedule():{}}}
-export function saveWeekSchedule(week:string,data:ScheduleData):boolean {try{const all=JSON.parse(window.localStorage.getItem('zhike-schedule-weeks-v1')||'{}');window.localStorage.setItem('zhike-schedule-weeks-v1',JSON.stringify({...all,[week]:data}));if(week===mondayKey())saveSchedule(data);return true}catch{return false}}
+export function loadWeekSchedule(week:string):ScheduleData {try{const all=JSON.parse(window.localStorage.getItem(scopedStorageKey('zhike-schedule-weeks-v1'))||'{}');return all[week]|| (week===mondayKey()?loadSchedule():{})}catch{return week===mondayKey()?loadSchedule():{}}}
+export function saveWeekSchedule(week:string,data:ScheduleData):boolean {try{const all=JSON.parse(window.localStorage.getItem(scopedStorageKey('zhike-schedule-weeks-v1'))||'{}');window.localStorage.setItem(scopedStorageKey('zhike-schedule-weeks-v1'),JSON.stringify({...all,[week]:data}));if(week===mondayKey())saveSchedule(data);return true}catch{return false}}

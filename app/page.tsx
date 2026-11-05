@@ -1,4 +1,7 @@
-import Home from '@/components/studio/home-client';
+import {AccountWorkspace} from '@/components/studio/account-workspace';
+import {requireUser} from '@/lib/auth';
+import {headers} from 'next/headers';
+import {redirect} from 'next/navigation';
 import WelcomeClient from './login/welcome-client';
 import {isWorkspaceModule} from '@/lib/modules';
 
@@ -17,5 +20,7 @@ export default async function Page({searchParams}:PageProps) {
     return <WelcomeClient next={typeof params.next==='string'?params.next:undefined}/>;
   }
   const initialEntry=params.entry==='new'||params.entry==='resume'?params.entry:null;
-  return <Home initialModule={params.m} initialEntry={initialEntry}/>;
+  let user;try{user=await requireUser(new Request(process.env.AUTH_BASE_URL||'http://localhost',{headers:await headers()}))}catch{redirect('/login')}
+  if(params.m==='admin'&&user.role!=='admin')redirect('/?m=dashboard');
+  return <AccountWorkspace user={{id:user.id,username:user.username,role:user.role}} module={params.m} entry={initialEntry}/>;
 }

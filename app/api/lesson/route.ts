@@ -24,7 +24,7 @@ function coalesceLessonJson(raw:unknown):unknown{
  return {title:r.title??'',goals:Array.isArray(r.goals)?r.goals:[],difficulties:Array.isArray(r.difficulties)?r.difficulties:[],activities:Array.isArray(r.activities)?r.activities:[],materials:Array.isArray(r.materials)?r.materials:[],exercises:Array.isArray(r.exercises)?r.exercises:[],board:typeof r.board==='string'?r.board:'',homework:typeof r.homework==='string'?r.homework:'',notes:typeof r.notes==='string'?r.notes:''};
 }
 
-export async function POST(req:Request){try{const b=await body(req,2000000);const parsed=briefSchema.safeParse(b.brief),sel=selection.safeParse(b.knowledge);if(!parsed.success||!sel.success)throw new AppError('教学需求或知识清单格式有误。');const brief=parsed.data;if(!modelInfo().configured)throw new AppError('模型服务尚未配置，可先使用模板生成。',503);const s=(await session())!;
+async function generateLesson(req:Request){try{const b=await body(req,2000000);const parsed=briefSchema.safeParse(b.brief),sel=selection.safeParse(b.knowledge);if(!parsed.success||!sel.success)throw new AppError('教学需求或知识清单格式有误。');const brief=parsed.data;if(!modelInfo().configured)throw new AppError('模型服务尚未配置，可先使用模板生成。',503);const s=(await session())!;
  const grammarInputs=new Set(allGrammarTerms(brief.knowledgeGroups?.grammar||''));
  let terms=[...new Set([...allGrammarTerms(brief.terms).filter(term=>!grammarInputs.has(term)||term.length<=80),...sel.data.map(choice=>choice.name)])];
  if(!terms.length){
@@ -91,3 +91,5 @@ export async function POST(req:Request){try{const b=await body(req,2000000);cons
  }
  return finish();
  }catch(e){return failure(e)}}
+
+export async function POST(req:Request){try{const user=await (await import('@/lib/auth')).requireUser(req);const response=await generateLesson(req);if(response.ok){await (await import('@/lib/site-activity')).markUsed(user.id);await config().DB.prepare('INSERT INTO usage_events(id,user_id,kind,status,model,created_at,finished_at) VALUES(?,?,?,?,?,?,?)').bind(crypto.randomUUID(),user.id,'lesson','success',modelInfo().name,Date.now(),Date.now()).run()}return response}catch(error){return failure(error)}}

@@ -1,2 +1,4 @@
-import { body,kg,setSession,json,failure,AppError } from '@/lib/server';
-export async function POST(req:Request){try{const b=await body(req);if(typeof b.username!=='string'||typeof b.password!=='string'||!b.username.trim()||b.username.length>100||!b.password||b.password.length>200)throw new AppError('请输入有效账号和密码。');const d=await kg('auth/login',{username:b.username.trim(),password:b.password});if(!d.access_token||!d.user?.id)throw new AppError('认证服务返回不完整。',502);await setSession({token:d.access_token,id:String(d.user.id),name:String(d.user.username||b.username),exp:Date.now()+Math.min(Number(d.expires_in)||3600,86400)*1000},new URL(req.url).protocol==='https:');return json({username:d.user.username})}catch(e){return failure(e)}}
+import {requireUser} from '@/lib/auth';
+import {body,json,failure} from '@/lib/server';
+import {sharedGraphSession} from '@/lib/shared-graph-session';
+export async function POST(req:Request){try{await body(req);await requireUser(req);await sharedGraphSession();return json({connected:true})}catch(error){return failure(error)}}

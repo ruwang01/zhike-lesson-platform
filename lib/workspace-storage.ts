@@ -1,3 +1,4 @@
+import {scopedStorageKey} from './owner-storage';
 import { z } from 'zod';
 import { draftSchema, knowledgeSchema } from './workspace';
 import { freshBriefForNewLesson, normalizeBrief, lessonSchema, type Draft, type Brief, type Knowledge } from './lesson';
@@ -32,7 +33,7 @@ export type WorkspaceSnapshot = {
 export function readWorkspaceSnapshot(): WorkspaceSnapshot | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = window.localStorage.getItem(WORKSPACE_KEY);
+    const raw = window.localStorage.getItem(scopedStorageKey(WORKSPACE_KEY));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<WorkspaceSnapshot>;
     if (parsed.version !== 2) return null;
@@ -46,7 +47,7 @@ export function writeWorkspaceSnapshot(snap: Omit<WorkspaceSnapshot, 'version'>)
   if (typeof window === 'undefined') return false;
   try {
     window.localStorage.setItem(
-      WORKSPACE_KEY,
+      scopedStorageKey(WORKSPACE_KEY),
       JSON.stringify({ version: 2, ...snap } satisfies WorkspaceSnapshot),
     );
     return true;

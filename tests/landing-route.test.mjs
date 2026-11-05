@@ -2,9 +2,11 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 const plugin={name:'route-components',setup(b){
- b.onResolve({filter:/home-client$/},()=>({path:'Home',namespace:'fixture'}));
+ b.onResolve({filter:/account-workspace$/},()=>({path:'Home',namespace:'fixture'}));
  b.onResolve({filter:/login\/welcome-client$/},()=>({path:'Welcome',namespace:'fixture'}));
- b.onLoad({filter:/.*/,namespace:'fixture'},args=>({contents:`export default function ${args.path}(){return null}`,loader:'js'}));
+ b.onResolve({filter:/lib\/auth$/},()=>({path:'auth',namespace:'fixture'}));
+ b.onResolve({filter:/^next\/(headers|navigation)$/},args=>({path:args.path,namespace:'fixture'}));
+ b.onLoad({filter:/.*/,namespace:'fixture'},args=>({contents:args.path==='auth'?`export const requireUser=async()=>{if(globalThis.__denySite)throw Error('unauthenticated');return {id:'site-user',username:'teacher',role:'admin'}};`:args.path==='next/headers'?`export const headers=async()=>new Headers();`:args.path==='next/navigation'?`export const redirect=path=>{throw Error('Redirect:'+path)};`:args.path==='Home'?`export function AccountWorkspace(){return null}`:`export default function ${args.path}(){return null}`,loader:'js'}));
 }};
 const result=await build({stdin:{contents:"export {default as Page,generateMetadata} from './app/page.tsx';export {safeNext,LOGIN_KEY,setLoggedIn,clearLoggedIn} from './lib/login-gate.ts';export {WORKSPACE_URL,moduleTitles} from './lib/modules.ts';",resolveDir:process.cwd()},bundle:true,write:false,platform:'node',format:'esm',jsx:'automatic',plugins:[plugin]});
 const {Page,generateMetadata,safeNext,WORKSPACE_URL,moduleTitles,LOGIN_KEY,setLoggedIn,clearLoggedIn}=await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
@@ -16,9 +18,9 @@ test('bare-domain and tracking-link visits show the globe login page',async()=>{
 });
 test('existing module and draft-resume links still render the workspace',async()=>{
  for(const m of Object.keys(moduleTitles)){
-  const view=await Page(props({m,entry:'resume'}));assert.equal(view.type.name,'Home');assert.equal(view.props.initialModule,m);assert.equal(view.props.initialEntry,'resume');
+  const view=await Page(props({m,entry:'resume'}));assert.equal(view.type.name,'AccountWorkspace');assert.equal(view.props.module,m);assert.equal(view.props.entry,'resume');
  }
- assert.equal((await Page(props({m:'design',entry:'invalid'}))).props.initialEntry,null);
+ assert.equal((await Page(props({m:'design',entry:'invalid'}))).props.entry,null);
 });
 test('landing page passes only a single next target to the unchanged login form',async()=>{
  assert.equal((await Page(props({next:'/schedule'}))).props.next,'/schedule');
@@ -39,3 +41,5 @@ test('entry preference changes leave saved lesson drafts untouched',()=>{
  try{setLoggedIn();assert.equal(values.get(LOGIN_KEY),'1');clearLoggedIn();assert.equal(values.get('zhike-workspace'),'preserved-draft')}
  finally{globalThis.window=previousWindow;globalThis.localStorage=previousStorage;globalThis.document=previousDocument}
 });
+
+test('workspace deep links require a real server session',async()=>{globalThis.__denySite=true;try{await assert.rejects(Page(props({m:'design',entry:'resume'})),/Redirect:\/login/)}finally{globalThis.__denySite=false}});

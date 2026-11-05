@@ -11,7 +11,7 @@ const base64=(a:Uint8Array)=>btoa(String.fromCharCode(...a)).replace(/\+/g,'-').
 async function key(){const s=config().SESSION_SECRET;if(!s)throw new AppError('服务端会话配置尚未完成。',503);return crypto.subtle.importKey('raw',await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)),{name:'AES-GCM'},false,['encrypt','decrypt'])}
 export type Session={token:string;id:string;name:string;exp:number};
 export async function setSession(s:Session,secure:boolean){const iv=crypto.getRandomValues(new Uint8Array(12));const cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv},await key(),new TextEncoder().encode(JSON.stringify(s)));(await cookies()).set('kg_session',base64(iv)+'.'+base64(new Uint8Array(cipher)),{httpOnly:true,secure,sameSite:'strict',path:'/',maxAge:Math.max(0,Math.floor((s.exp-Date.now())/1000))})}
-export async function session(required=true){try{const raw=(await cookies()).get('kg_session')?.value;if(!raw)throw Error();const [iv,cipher]=raw.split('.');const data=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes(iv)},await key(),bytes(cipher));const s=JSON.parse(new TextDecoder().decode(data)) as Session;if(s.exp<Date.now()||!s.id||!s.token)throw Error();return s}catch{if(required)throw new AppError('请先连接你自己的知识图谱账号，或重新登录。',401);return null}}
+export async function session(required=true){try{const {headers}=await import('next/headers');const {requireUser}=await import('./auth');await requireUser(new Request(process.env.AUTH_BASE_URL||'http://localhost',{headers:await headers()}));return await (await import('./shared-graph-session')).sharedGraphSession()}catch(error){if(required)throw error;return null}}
 /**
  * 图谱底层错误码 → 人话。
  *
@@ -96,4 +96,5 @@ export async function kg(path:string,data:unknown,token?:string){
    throw new AppError('知识图谱服务连接失败：'+hint,502);
   }
  }
- let d;try{d=await r.json() as Record<string,any>}catch{throw new AppError('知识图谱返回了无法解析的响应。',502)}if(!r.ok||d.success===false)throw new AppError(r.status===401?'图谱账号或会话无效，请重新登录。':String(d.detail||d.message||'知识图谱查询失败。').slice(0,300),r.status===401?401:r.status===403?403:502);return d}
+ if(r.status===401){(await import('./shared-graph-session')).invalidateSharedGraph()}
+ let d;try{d=await r.json() as Record<string,any>}catch{throw new AppError('知识图谱返回了无法解析的响应。',502)}if(!r.ok||d.success===false)throw new AppError(r.status===401?'知识图谱服务认证失效，请重试；持续失败请联系管理员。':String(d.detail||d.message||'知识图谱查询失败。').slice(0,300),r.status===401?401:r.status===403?403:502);return d}

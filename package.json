@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1 --port 5173",
-    "build": "next build --webpack",
+    "build": "node scripts/production-migrate.mjs && next build --webpack",
     "start": "next start --hostname 127.0.0.1 --port 5173",
     "test": "node --test tests/*.test.mjs",
     "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs",
