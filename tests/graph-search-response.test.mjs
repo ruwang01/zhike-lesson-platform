@@ -1,0 +1,11 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+const {outputFiles}=await build({stdin:{contents:"export * from './lib/graph-search-response';export * from './lib/independent-search';",resolveDir:process.cwd()},bundle:true,platform:'node',format:'esm',write:false});
+const {graphSearchResponse,graphSearchError,independentQuery,searchKinds}=await import('data:text/javascript;base64,'+Buffer.from(outputFiles[0].text).toString('base64'));
+test('all four graph queries avoid substrings rejected by upstream read-only guard',()=>{for(const kind of Object.keys(searchKinds)){const query=independentQuery(kind);assert.doesNotMatch(query,/CREATE|SET|DELETE|REMOVE|MERGE|DROP/i);assert.match(query,/SKIP \$skip/);assert.doesNotMatch(query,/offset/i)}});
+test('HTML error page becomes readable error instead of raw JSON parsing failure',async()=>{for(const status of [200,404,502,504]){await assert.rejects(graphSearchResponse(new Response('<!DOCTYPE html><html>error</html>',{status,headers:{'Content-Type':'text/html'}})),e=>{assert.doesNotMatch(e.message,/Unexpected token|DOCTYPE|not valid JSON/);assert.match(e.message,status===504?/超时/:/重试/);return true})}});
+test('empty and malformed JSON bodies fail cleanly',async()=>{for(const body of ['', '{bad', '{}','{"results":null,"hasMore":false}','{"results":[{"id":"1"}],"hasMore":false}']){await assert.rejects(graphSearchResponse(new Response(body)),/重试/)}});
+test('graph permission errors preserved and real successful results accepted',async()=>{await assert.rejects(graphSearchResponse(Response.json({error:'图谱会话已失效。'},{status:401})),/图谱会话已失效/);const payload={results:[{id:'Character:美',kind:'Character',name:'美',detail:'美丽',example:'这里很美。',relations:[]}],hasMore:false};assert.deepEqual(await graphSearchResponse(Response.json(payload)),payload)});
+test('redirected login HTML does not become successful result or raw parser error',async()=>{const response=new Response('<!DOCTYPE html>login');Object.defineProperty(response,'redirected',{value:true});await assert.rejects(graphSearchResponse(response),/重定向/)});
+test('timeouts and network failures keep user-facing error actionable',()=>{assert.match(graphSearchError(new DOMException('timeout','TimeoutError')),/超时.*关键词已保留/);assert.match(graphSearchError(new TypeError('Failed to fetch')),/网络连接失败/)});
