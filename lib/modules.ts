@@ -17,10 +17,10 @@ export type Module =
 
 export const moduleTitles: Record<Module, string> = {
   dashboard: '我的工作台',
-  knowledge: '知识检索与确认',
+  knowledge: '知识检索',
   design: '教案设计',
   materials: '教学材料',
-  history: '历史会话与版本',
+  history: '历史教案',
   account: '账号与设置',
   admin: '管理员窗口',
 };

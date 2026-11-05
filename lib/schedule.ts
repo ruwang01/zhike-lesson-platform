@@ -241,3 +241,8 @@ export function formatMonth(iso: string): string {
 export function countPlaced(data: ScheduleData): number {
   return Object.keys(data).length;
 }
+
+/** Date-specific views preserve the original current-week schedule during migration. */
+export function mondayKey(date=new Date()):string {const d=new Date(date);d.setDate(d.getDate()-(d.getDay()+6)%7);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+export function loadWeekSchedule(week:string):ScheduleData {try{const all=JSON.parse(window.localStorage.getItem('zhike-schedule-weeks-v1')||'{}');return all[week]|| (week===mondayKey()?loadSchedule():{})}catch{return week===mondayKey()?loadSchedule():{}}}
+export function saveWeekSchedule(week:string,data:ScheduleData):boolean {try{const all=JSON.parse(window.localStorage.getItem('zhike-schedule-weeks-v1')||'{}');window.localStorage.setItem('zhike-schedule-weeks-v1',JSON.stringify({...all,[week]:data}));if(week===mondayKey())saveSchedule(data);return true}catch{return false}}

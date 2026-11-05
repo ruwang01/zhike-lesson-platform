@@ -10,8 +10,10 @@ import {
   MapPin,
   GraduationCap,
 } from 'lucide-react';
-import { ModuleNav } from '@/components/studio/navigation';
+import {readLessonRecords,type LessonRecord} from '@/lib/lesson-records';
+import { WorkspaceNav,ProfileMenu } from '@/components/studio/workspace-nav';
 import {
+  mondayKey,loadWeekSchedule,saveWeekSchedule,
   DAYS,
   PERIODS,
   CELL_HEIGHT,
@@ -57,6 +59,11 @@ const EMPTY_FORM: FormState = {
 
 export default function ScheduleClient() {
 
+  const [week,setWeek]=useState(()=>mondayKey());
+  const [loadedWeek,setLoadedWeek]=useState('');
+  const [saveFailed,setSaveFailed]=useState(false);
+  const [records,setRecords]=useState<LessonRecord[]>([]);
+  function changeWeek(offset:number){const date=new Date(week+'T12:00:00');date.setDate(date.getDate()+offset*7);setReady(false);const next=mondayKey(date);setWeek(next);window.history.pushState(null,'','/schedule?week='+next)}
   /* ---------- 状态 ---------- */
   const [schedule, setSchedule] = useState<ScheduleData>({});
   const [pool, setPool] = useState<LessonItem[]>([]);
@@ -66,16 +73,20 @@ export default function ScheduleClient() {
 
   /* ---------- 挂载：恢复课表 + 载入教案池 ---------- */
   useEffect(() => {
-    setSchedule(loadSchedule());
-    setPool(loadLessonPool());
+    const requested=new URLSearchParams(window.location.search).get('week');if(requested&&/^\d{4}-\d{2}-\d{2}$/.test(requested)&&!Number.isNaN(Date.parse(requested))){setWeek(mondayKey(new Date(requested+'T12:00:00')))}
+    setRecords(readLessonRecords());
+    setSchedule(loadWeekSchedule(week));
+    setPool([...readLessonRecords().map(r=>({id:'record-'+r.id,title:r.snapshot.draft?.lesson.title||r.snapshot.brief.topic||'未命名教案',meta:r.snapshot.draft?'已生成':'草稿',origin:'history' as const})),...loadLessonPool()]);
     setReady(true);
   }, []);
 
+  useEffect(()=>{setSchedule(loadWeekSchedule(week));setLoadedWeek(week);setReady(true)},[week]);
+  useEffect(()=>{const back=()=>{const key=new URLSearchParams(window.location.search).get('week');setWeek(key&&/^\d{4}-\d{2}-\d{2}$/.test(key)?mondayKey(new Date(key+'T12:00:00')):mondayKey())};window.addEventListener('popstate',back);return()=>window.removeEventListener('popstate',back)},[]);
   /* ---------- 课表变化 → 持久化 ---------- */
   useEffect(() => {
-    if (!ready) return;
-    saveSchedule(schedule);
-  }, [schedule, ready]);
+    if (!ready||loadedWeek!==week) return;
+    setSaveFailed(!saveWeekSchedule(week,schedule));
+  }, [schedule, ready,week,loadedWeek]);
 
   /* ---------- Esc 关闭弹窗 ---------- */
   useEffect(() => {
@@ -174,24 +185,18 @@ export default function ScheduleClient() {
             智课<span className="brand-en">ZHÌKE STUDIO</span>
           </span>
         </a>
-        <ModuleNav active="schedule" variant="full" />
+        <WorkspaceNav active="schedule"/>
         <div className="sidebar-bottom">
           <span className="save-status">
             <span className="green-dot" />
-            排课已保存
+            {saveFailed?'排课保存失败，请重试':'排课已保存'}
           </span>
-          <div className="profile">
-            <span>师</span>
-            <div>
-              我的备课空间
-              <small>排课数据仅保存在此浏览器</small>
-            </div>
-          </div>
+          <ProfileMenu/>
         </div>
       </aside>
 
       {/* ==================== 核心卡片 ==================== */}
-      <div className="schedule-stage">
+      <div className="schedule-stage"><div className="schedule-date-toolbar"><h1>课程表 / 本周课程</h1><button className="secondary" onClick={()=>changeWeek(-1)}>上一周</button><span>{week} 起</span><button className="secondary" onClick={()=>changeWeek(1)}>下一周</button><button className="text-button" onClick={()=>{if(week!==mondayKey())setReady(false);setWeek(mondayKey());window.history.pushState(null,'','/schedule')}}>返回今天</button></div>{saveFailed&&<p role="alert" className="message error">排课保存失败，当前输入已保留。<button onClick={()=>setSaveFailed(!saveWeekSchedule(week,schedule))}>重试保存</button></p>}
         <div className="schedule-card lg-surface">
           {/* ---------- 顶部数据栏 ---------- */}
           <div className="schedule-meta">
@@ -221,7 +226,7 @@ export default function ScheduleClient() {
                 </div>
                 {DAYS.map((day) => (
                   <div className="schedule-th" role="columnheader" key={day}>
-                    {day}
+                    {day}<small>{(()=>{const d=new Date(week+'T12:00:00');d.setDate(d.getDate()+DAYS.indexOf(day));return `${d.getMonth()+1}/${d.getDate()}`})()}</small>
                   </div>
                 ))}
               </div>
@@ -383,6 +388,7 @@ export default function ScheduleClient() {
                   );
                 })}
               </div>
+              {form.poolId&&(()=>{const record=records.find(r=>'record-'+r.id===form.poolId||r.snapshot.draft&&form.poolId.includes(r.snapshot.draft.createdAt));return record?<a className="text-button" href={'/?m=design&entry=resume&lesson='+encodeURIComponent(record.id)}>{record.snapshot.draft?'查看教案':'继续备课'}</a>:null})()}
               {form.title && !form.poolId && (
                 <p className="schedule-hint">
                   当前教案名：{form.title}

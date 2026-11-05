@@ -1,17 +1,21 @@
 'use client';
 import {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react';
+import {saveLessonRecord} from './lesson-records';
 import {writeWorkspaceSnapshot, type WorkspaceSnapshot} from './workspace-storage';
 type Snapshot = Omit<WorkspaceSnapshot, 'version'>;
 export function useWorkspaceAutosave(snapshot: Snapshot, ready: boolean) {
   const latest = useRef<Snapshot | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saved, setSaved] = useState(false);
+  const [saveState,setSaveState]=useState<'saving'|'saved'|'error'>('saving');
   const flush = useCallback((replacement?: Snapshot) => {
     if (timer.current !== null) clearTimeout(timer.current);
     timer.current = null;
     if (replacement) latest.current = replacement;
     if (latest.current) {
-      const ok = writeWorkspaceSnapshot(latest.current);
+      let ok=false;
+      try{saveLessonRecord({version:2,...latest.current});ok=writeWorkspaceSnapshot(latest.current)}catch{}
+      setSaveState(ok?'saved':'error');
       setSaved(ok);
       return ok;
     }
@@ -21,9 +25,10 @@ export function useWorkspaceAutosave(snapshot: Snapshot, ready: boolean) {
     if (!ready) return;
     latest.current = snapshot;
     setSaved(false);
+    setSaveState('saving');
     timer.current = setTimeout(() => flush(), 350);
     return () => {if (timer.current !== null) clearTimeout(timer.current)};
-  }, [ready, snapshot.brief, snapshot.knowledge, snapshot.draft, snapshot.history,
+  }, [ready, snapshot.recordId, snapshot.brief, snapshot.knowledge, snapshot.draft, snapshot.history,
       snapshot.flow, snapshot.active, snapshot.step, snapshot.tab, snapshot.knowledgeVerifyVisible, snapshot.knowledgeWizard, snapshot.selectionConfirmations, snapshot.designWizard, snapshot.exportAuthor, flush]);
   useEffect(() => {
     if (!ready) return;
@@ -44,5 +49,5 @@ export function useWorkspaceAutosave(snapshot: Snapshot, ready: boolean) {
       document.removeEventListener('click', navigation, true);
     };
   }, [ready, flush]);
-  return {saved, flush};
+  return {saved, saveState, flush};
 }

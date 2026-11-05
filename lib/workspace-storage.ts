@@ -12,6 +12,8 @@ type StoredDraft = Draft;
 
 export type WorkspaceSnapshot = {
   version: 2;
+  recordId?: string;
+  updatedAt?: string;
   brief: Brief;
   knowledge: Knowledge[];
   draft: StoredDraft | null;
