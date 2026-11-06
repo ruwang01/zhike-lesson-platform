@@ -23,7 +23,7 @@ export default async function IntroPage({ searchParams }: { searchParams: Promis
         <div>
           <a className={styles.eyebrow} href="/">国际中文教育智能备课平台</a>
           <h1 id="intro-title" className={styles.title}><span>智课有谱，</span><span>备课有路！</span></h1>
-          <p className={styles.description}>开启你的教案智能生成之旅，基于知识图谱，让每一堂中文课有据可依，让每一次备课都事半功倍。</p>
+          <p className={styles.description}>“智”在高效，“谱”在专业，“路”在教学。智慧赋能、知识有据、备课有序。开启你的教案智能生成之旅，让每一次备课都事半功倍。</p>
           <div className={styles.actions}>
             <a className={styles.enter} href={loginHref}>进入系统 <ArrowUpRight aria-hidden="true" size={17} /></a>
             <a className={styles.link} href="/intro/about">认识我们 <ArrowUpRight aria-hidden="true" size={17} /></a>
