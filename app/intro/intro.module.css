@@ -40,6 +40,37 @@
 }
 .link { font-size: .9375rem; }
 .link:hover { text-decoration: underline; text-underline-offset: .22em; }
+.languageMenu { position: relative; z-index: 3; flex: none; }
+.languageMenu summary {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  min-height: 2.75rem;
+  padding-inline: .65rem;
+  border: 1px solid #cbd9ed;
+  border-radius: 8px;
+  color: var(--brand-blue);
+  font-size: .875rem;
+  font-weight: 650;
+  list-style: none;
+  cursor: pointer;
+}
+.languageMenu summary:hover, .languageMenu[open] summary { background: var(--brand-frost); }
+.languageOptions {
+  position: absolute;
+  inset-block-start: calc(100% + .35rem);
+  inset-inline-end: 0;
+  display: grid;
+  min-inline-size: 8rem;
+  padding: .35rem;
+  border: 1px solid #cbd9ed;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--glass-shadow);
+  list-style: none;
+}
+.languageOptions a { display: block; padding: .4rem .65rem; border-radius: 5px; }
+.languageOptions a:hover, .languageOptions a[aria-current] { color: var(--brand-blue); background: #eaf2ff; }
 .page a:focus-visible { outline: 2px solid var(--brand-blue); outline-offset: 4px; }
 .main, .about {
   width: 100%;
@@ -97,6 +128,13 @@
   font-size: clamp(1rem, 1.25vw, 1.125rem);
   line-height: 1.85;
 }
+.page[lang='en'] .title {
+  font-family: Georgia, var(--font-serif);
+  font-size: clamp(2rem, min(4.55vw, 7.5svh), 4.75rem);
+  letter-spacing: -.025em;
+}
+.page[lang='en'] .description { max-inline-size: 35em; }
+.page[lang='en'] .eyebrow { letter-spacing: .04em; }
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin-block-start: clamp(16px, 3.4svh, 34px); }
 .actions .link, .enter { font-size: 1rem; font-weight: 650; }
 .enter { min-block-size: 52px; padding: 10px 24px; border-radius: 4px; color: #172f58; background: #f3e3c3; }
@@ -111,6 +149,7 @@
   container-type: inline-size;
 }
 .artwork img { display: block; width: 100%; height: auto; }
+.page[lang='en'] .artwork { --intro-chrome: clamp(21rem, 43svh, 25rem); }
 .label {
   position: absolute;
   display: inline-flex;
@@ -275,9 +314,15 @@
   .feature h2 { font-size: 1.125rem; }
   .feature p { font-size: .875rem; }
 }
+@media (min-width: 801px) {
+  .page[lang='en'] .featureIcon { grid-row: auto; }
+  .page[lang='en'] .feature h2 { align-self: center; font-size: 1.0625rem; }
+  .page[lang='en'] .feature p { grid-column: 1 / -1; }
+}
 @media (min-width: 801px) and (max-height: 560px) {
   .hero { padding-block: 8px; }
   .actions { margin-block-start: 14px; }
+  .page[lang='en'] .title { font-size: clamp(2rem, 6.6svh, 2.5rem); }
 }
 @media (max-width: 800px) {
   .masthead, .identity { gap: 12px; }
@@ -290,10 +335,10 @@
   .identity { flex-wrap: wrap; gap: 8px; }
   .universityLogo { width: min(154px, 42vw); }
   .tagline { flex-basis: 100%; padding: 0; border: 0; font-size: .75rem; }
-  .masthead > .link { padding-block-start: 8px; }
   .hero { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .artwork { width: min(100%, 25rem); }
   .title { font-size: clamp(2.25rem, 8.5vw, 3.25rem); }
+  .page[lang='en'] .title { font-size: clamp(2rem, 8vw, 3.25rem); }
   .features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 300px) {

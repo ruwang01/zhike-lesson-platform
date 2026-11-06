@@ -14,7 +14,7 @@ const {Page,generateMetadata,safeNext,WORKSPACE_URL,moduleTitles,LOGIN_KEY,setLo
 const props=searchParams=>({searchParams:Promise.resolve(searchParams)});
 test('bare-domain and tracking-link visits show the platform introduction',async()=>{
  for(const params of [{},{utm_source:'link'},{m:'unknown'},{m:'constructor'},{m:['design','knowledge']}]){
-  const view=await Page(props(params));assert.equal(view.type.name,'IntroLayout');assert.equal(view.props.children.type.name,'IntroPage');assert.equal((await generateMetadata(props(params))).title,'国际中文教育智能备课平台 · 智课');
+  const view=await Page(props(params));assert.equal(view.type.name,'IntroHome');assert.equal(view.props.path,'/');assert.equal((await generateMetadata(props(params))).title,'国际中文教育智能备课平台 · 智课');
  }
 });
 test('existing module and draft-resume links still render the workspace',async()=>{
@@ -30,14 +30,23 @@ function links(view){
 }
 async function introductionLinks(params){
  const page=await Page(props(params));
- const intro=page.props.children;
- return links(await intro.type(intro.props));
+ const intro=page.type(page.props);
+ return links(intro.type(intro.props));
 }
 test('introduction enters the existing login page and forwards only a single next target',async()=>{
  assert.ok((await introductionLinks({})).includes('/login'));
  assert.ok((await introductionLinks({next:'/schedule'})).includes('/login?next=%2Fschedule'));
  assert.ok((await introductionLinks({next:['/schedule','/preview']})).includes('/login'));
  assert.ok(!(await introductionLinks({})).includes('/register'));
+});
+test('language switching preserves the introduction and its login destination',async()=>{
+ const chinese=await introductionLinks({next:'/schedule'});
+ const english=await introductionLinks({lang:'en',next:'/schedule'});
+ assert.ok(chinese.includes('/?lang=en&next=%2Fschedule'));
+ assert.ok(english.includes('/?next=%2Fschedule'));
+ assert.ok(english.includes('/intro/about?lang=en'));
+ assert.ok(english.includes('/login?next=%2Fschedule'));
+ assert.equal((await generateMetadata(props({lang:'en'}))).title,'ZHIKE · Lesson Planning for Chinese Language Teachers');
 });
 test('login defaults to the workspace and avoids landing-page loops',()=>{
  assert.equal(WORKSPACE_URL,'/?m=dashboard');

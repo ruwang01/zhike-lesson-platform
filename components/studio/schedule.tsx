@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   X,
-  CalendarDays,
   BookOpen,
   Trash2,
   Clock,
@@ -11,7 +10,7 @@ import {
   GraduationCap,
 } from 'lucide-react';
 import {readLessonRecords,type LessonRecord} from '@/lib/lesson-records';
-import { WorkspaceNav,ProfileMenu } from '@/components/studio/workspace-nav';
+import { WorkspaceNav,WorkspaceSidebar,ProfileMenu } from '@/components/studio/workspace-nav';
 import {
   mondayKey,loadWeekSchedule,saveWeekSchedule,
   DAYS,
@@ -175,21 +174,9 @@ export default function ScheduleClient() {
 
   return (
     <div className="app-shell schedule-page">
-      {/* ==================== 顶部导航（复用站内完整胶囊） ==================== */}
-      <aside className="sidebar">
-        <a href="/" className="brand">
-          <span className="brand-mark">
-            <CalendarDays size={24} />
-          </span>
-          <span>
-            智课<span className="brand-en">ZHIKE STUDIO</span>
-          </span>
-        </a>
+      <WorkspaceSidebar profile={<ProfileMenu/>}>
         <WorkspaceNav active="schedule"/>
-        <div className="sidebar-bottom">
-          <ProfileMenu/>
-        </div>
-      </aside>
+      </WorkspaceSidebar>
 
       <main className="schedule-stage">
         <header className="schedule-heading">

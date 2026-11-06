@@ -2922,6 +2922,23 @@ main{max-width:1440px;margin:auto;padding:14px 44px 0;position:relative}
   background:linear-gradient(155deg,#f1f7ff8c,#f1f7ff40 52%,#d9e8ff55);
   box-shadow:inset -1px 0 0 #ffffffa6,4px 0 22px #15396e1a;
 }
+.workspace-sidebar-heading{display:flex;align-items:center;justify-content:space-between;gap:.25rem}
+.app-shell .workspace-sidebar-heading .brand{padding:0;gap:.4rem;min-width:0}
+.workspace-sidebar-heading .brand-en{letter-spacing:.12em}
+.app-shell .sidebar-collapse{display:none;width:2.5rem;padding:0}
+.footer-bnu:hover{text-decoration:underline;text-underline-offset:.2em}
+@media(width > 64rem){
+ .app-shell .sidebar-collapse{display:inline-flex}
+ .app-shell:has(> .workspace-sidebar.is-collapsed){grid-template-columns:4.5rem minmax(0,1fr)}
+ .app-shell .workspace-sidebar.is-collapsed{width:4.5rem;padding-inline:.5rem;align-items:center}
+ .workspace-sidebar.is-collapsed .workspace-sidebar-heading{flex-direction:column;gap:.75rem}
+ .app-shell .workspace-sidebar.is-collapsed .workspace-nav,
+ .workspace-sidebar.is-collapsed .workspace-brand-label,
+ .app-shell .workspace-sidebar.is-collapsed .profile>div,
+ .workspace-sidebar.is-collapsed .profile>svg{display:none}
+ .workspace-sidebar.is-collapsed .profile{justify-content:center}
+ .workspace-sidebar.is-collapsed .profile-options{left:calc(100% + .5rem);right:auto;bottom:0;width:12rem}
+}
 
 @media(max-width:64rem){
  .app-shell:not(.login-shell){grid-template-columns:minmax(0,1fr);padding-top:var(--workspace-header);height:100dvh}

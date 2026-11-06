@@ -2,8 +2,8 @@ import {AccountWorkspace} from '@/components/studio/account-workspace';
 import {requireUser} from '@/lib/auth';
 import {headers} from 'next/headers';
 import {redirect} from 'next/navigation';
-import IntroLayout from './intro/layout';
-import IntroPage, {metadata as introMetadata} from './intro/page';
+import {IntroHome} from './intro/intro-home';
+import {introLanguage,introMetadata} from './intro/language';
 import {isWorkspaceModule} from '@/lib/modules';
 
 type EntryParams = { [key: string]: string | string[] | undefined };
@@ -11,13 +11,13 @@ type PageProps = {searchParams: Promise<EntryParams>};
 
 export async function generateMetadata({searchParams}:PageProps) {
   const params=await searchParams;
-  return isWorkspaceModule(params.m)?{title:'智课 · 中文教案工作台'}:introMetadata;
+  return isWorkspaceModule(params.m)?{title:'智课 · 中文教案工作台'}:introMetadata[introLanguage(params.lang)];
 }
 
 export default async function Page({searchParams}:PageProps) {
   const params=await searchParams;
   if(!isWorkspaceModule(params.m)) {
-    return <IntroLayout><IntroPage searchParams={searchParams}/></IntroLayout>;
+    return <IntroHome params={params} path="/"/>;
   }
   const initialEntry=params.entry==='new'||params.entry==='resume'?params.entry:null;
   let user;try{user=await requireUser(new Request(process.env.AUTH_BASE_URL||'http://localhost',{headers:await headers()}))}catch{redirect('/login')}

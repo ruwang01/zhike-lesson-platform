@@ -1,10 +1,6 @@
 'use client';
 
-/**
- * 木铎 —— 北师大文化符号。
- * 线性极简单色图标：悬柄 → 铎身（窄肩外扩）→ 口沿（古钟喇叭口）→ 木舌（垂线末端圆点）。
- * 有舌才是木铎，不是普通钟。
- */
+/** Line mark based on the muduo silhouette in the introduction illustration. */
 export function TongueIcon({size=24,className,color='currentColor'}:{size?:number;className?:string;color?:string}){
  return (
   <svg
@@ -20,16 +16,8 @@ export function TongueIcon({size=24,className,color='currentColor'}:{size?:numbe
    aria-hidden="true"
    focusable="false"
   >
-   {/* 悬柄 */}
-   <path d="M12 2.2v1.5"/>
-   <circle cx="12" cy="4.2" r="1.2"/>
-   {/* 铎身 */}
-   <path d="M9.2 6.7h5.6c1.7 1.8 2.7 4.3 2.7 7v3.7H6.5v-3.7c0-2.7 1-5.2 2.7-7Z"/>
-   {/* 口沿 */}
-   <path d="M5.6 17.4h12.8"/>
-   {/* 木舌 */}
-   <path d="M12 7.2v7.4"/>
-   <circle cx="12" cy="15.6" r="0.95"/>
+   <path d="M10 6V4.5a2 2 0 1 1 4 0V6M9.5 6h5l.6 2.6 2.7 1.7 2.2 9.5a27 27 0 0 0-16 0l2.2-9.5 2.7-1.7.6-2.6Z"/>
+   <path d="m12 10.7 2.1 2.1-2.1 2.1-2.1-2.1 2.1-2.1ZM7.2 17.1a24 24 0 0 1 9.6 0M12 18.7v3.1m-.7 0h1.4"/>
   </svg>
  );
 }
