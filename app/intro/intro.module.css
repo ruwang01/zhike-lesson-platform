@@ -25,6 +25,7 @@
   padding-block: clamp(8px, 1.45svh, 16px);
 }
 .identity { min-inline-size: 0; }
+.universityLink { flex: none; }
 .universityLogo { width: min(clamp(174px, 23svh, 220px), 30vw); height: auto; flex-shrink: 0; }
 .tagline {
   border-inline-start: 1px solid #cbd9ed;
@@ -39,7 +40,7 @@
   white-space: nowrap;
 }
 .link { font-size: .9375rem; }
-.link:hover { text-decoration: underline; text-underline-offset: .22em; }
+.link:hover, a.tagline:hover { text-decoration: underline; text-underline-offset: .22em; }
 .languageMenu { position: relative; z-index: 3; flex: none; }
 .languageMenu summary {
   display: flex;
@@ -128,6 +129,7 @@
   font-size: clamp(1rem, 1.25vw, 1.125rem);
   line-height: 1.85;
 }
+.description > span { display: block; }
 .page[lang='en'] .title {
   font-family: Georgia, var(--font-serif);
   font-size: clamp(2rem, min(4.55vw, 7.5svh), 4.75rem);

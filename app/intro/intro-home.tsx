@@ -8,7 +8,11 @@ const copy = {
   zh: {
     name: '国际中文教育智能备课平台',
     title: ['智课有谱，', '备课有路！'],
-    description: '“智”在高效，“谱”在专业，“路”在教学。智慧赋能、知识有据、备课有序。开启你的教案智能生成之旅，让每一次备课都事半功倍。',
+    description: [
+      '“智”在高效，“谱”在专业，“路”在教学。',
+      '智慧赋能、知识有据、备课有序。',
+      '开启你的教案智能生成之旅，让每一次备课都事半功倍。',
+    ],
     enter: '进入系统',
     about: '认识我们',
     image: '木铎、图谱连线与展开的书页',
@@ -19,7 +23,7 @@ const copy = {
   en: {
     name: 'Chinese Language Lesson Planning',
     title: ['Smarter lessons,', 'clearer plans.'],
-    description: 'Plan Chinese lessons more efficiently with a professional knowledge graph and a clear teaching workflow.',
+    description: ['Plan Chinese lessons more efficiently with a professional knowledge graph and a clear teaching workflow.'],
     enter: 'Enter the platform',
     about: 'About us',
     image: 'A muduo bell, knowledge graph connections, and an open book',
@@ -49,7 +53,7 @@ export function IntroHome({ params, path }: { params: IntroParams; path: '/' | '
           <div>
             <a className={styles.eyebrow} href={introHref('/', language)}>{content.name}</a>
             <h1 id="intro-title" className={styles.title}>{content.title.map(line => <span key={line}>{line}</span>)}</h1>
-            <p className={styles.description}>{content.description}</p>
+            <p className={styles.description}>{content.description.map(line => <span key={line}>{line}</span>)}</p>
             <div className={styles.actions}>
               <a className={styles.enter} href={loginHref}>{content.enter} <ArrowUpRight aria-hidden="true" size={17} /></a>
               <a className={styles.link} href={aboutHref}>{content.about} <ArrowUpRight aria-hidden="true" size={17} /></a>
