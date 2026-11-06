@@ -1,0 +1,48 @@
+<svg viewBox="0 0 438 388" role="img" aria-label="泛着金色光晕的木铎、图谱连线与教学资源包书页" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="muduo-grid" width="22" height="22" patternUnits="userSpaceOnUse"><path d="M22 0H0V22" fill="none" stroke="#bdd5ff" stroke-opacity=".14"/></pattern>
+            <linearGradient id="muduo-face" x1="0%" y1="0%" x2="92%" y2="100%"><stop stop-color="#587fbc"/><stop offset=".42" stop-color="#315b9f"/><stop offset="1" stop-color="#16376d"/></linearGradient>
+            <linearGradient id="muduo-glow"><stop stop-color="#b3d2ff" stop-opacity=".2"/><stop offset="1" stop-color="#e6ecff" stop-opacity=".03"/></linearGradient>
+            <linearGradient id="muduo-gold" x1="5%" y1="0%" x2="95%" y2="100%"><stop stop-color="#fff2c9"/><stop offset=".44" stop-color="#f5d18a"/><stop offset="1" stop-color="#cb9656"/></linearGradient>
+            <radialGradient id="muduo-aura"><stop stop-color="#ffd48d" stop-opacity=".36"/><stop offset=".57" stop-color="#efbc72" stop-opacity=".19"/><stop offset="1" stop-color="#efbc72" stop-opacity="0"/></radialGradient>
+            <filter id="muduo-soft-shadow" x="-50%" y="-100%" width="200%" height="300%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="9"/></filter>
+            <filter id="muduo-gold-halo" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="5"/></filter>
+            <path id="muduo-bell-body" d="M209 91h28l3 23 29 16 22 112-28-7a212 212 0 0 0-80 0l-28 7 22-112 29-16z"/>
+            <path id="muduo-bell-loop" d="M211 92v-8a12 12 0 0 1 24 0v8"/>
+          </defs>
+          <ellipse cx="223" cy="157" rx="143" ry="144" fill="url(#muduo-aura)"/>
+          <circle cx="218" cy="192" r="178" fill="url(#muduo-grid)"/>
+          <g fill="none" stroke="#bed8ff" stroke-opacity=".22">
+            <circle cx="218" cy="192" r="178"/><circle cx="218" cy="192" r="154"/><circle cx="218" cy="192" r="125"/>
+            <path d="M218 14v356M40 192h356" stroke-dasharray="2 5"/>
+          </g>
+          <g fill="none" stroke="#a9ccfb" stroke-width="1.2">
+            <path d="M76 102h25l26 26h34m123 0h30l26-26h28M69 241h39l37-38h24m103 0h25l40 38h26"/>
+            <path d="M108 109V86l20-19h13m179 162v27l16 16h13M119 230v32l-20 20m224-164V82l16-16"/>
+          </g>
+          <g fill="#e7c998">
+            <circle cx="127" cy="128" r="3"/><circle cx="145" cy="203" r="3"/><circle cx="314" cy="128" r="3"/><circle cx="297" cy="203" r="3"/>
+          </g>
+          <g fill="#c0dbff"><circle cx="141" cy="67" r="2"/><circle cx="349" cy="272" r="2"/><circle cx="99" cy="282" r="2"/><circle cx="339" cy="66" r="2"/></g>
+          <ellipse cx="235" cy="259" rx="79" ry="9" fill="#091f48" opacity=".74" filter="url(#muduo-soft-shadow)"/>
+          <use href="#muduo-bell-body" transform="translate(17 15)" fill="#0a214e" opacity=".76" filter="url(#muduo-soft-shadow)"/>
+          <g fill="none" stroke="#ffd58d" stroke-width="9" stroke-linejoin="round" opacity=".78" filter="url(#muduo-gold-halo)">
+            <use href="#muduo-bell-loop"/>
+            <use href="#muduo-bell-body"/>
+          </g>
+          <use href="#muduo-bell-body" transform="translate(6 6)" fill="#193c76" stroke="#bea16d" stroke-width="1" stroke-linejoin="round"/>
+          <use href="#muduo-bell-loop" fill="none" stroke="url(#muduo-gold)" stroke-width="2.8"/>
+          <use href="#muduo-bell-body" fill="url(#muduo-face)" stroke="url(#muduo-gold)" stroke-width="2.7" stroke-linejoin="round"/>
+          <path d="M214 99h18l3 20 28 17 17 92c-39-9-75-9-114 0l17-92 28-17z" fill="url(#muduo-glow)" stroke="#c2d9fd" stroke-width="1.1"/>
+          <path d="M181 145h84m-95 69c33-6 73-6 106 0" fill="none" stroke="#b6d1fa" stroke-opacity=".75"/>
+          <path d="M191 151h14v10h-9v-5m59-5h-14v10h9v-5M191 202h14v-10h-9v5m59 5h-14v-10h9v5" fill="none" stroke="#e9d1a7" stroke-width="1.1"/>
+          <path d="M223 158l19 19-19 19-19-19z" fill="none" stroke="#f2dcb4" stroke-width="1.5"/>
+          <path d="M223 166v22m-11-11h22" fill="none" stroke="#f2dcb4" stroke-width="1.1"/>
+          <circle cx="223" cy="177" r="3.4" fill="#f2dcb4"/>
+          <path d="M223 232v22" fill="none" stroke="#f2dcb4" stroke-width="2"/>
+          <circle cx="223" cy="256" r="4" fill="#f2dcb4"/>
+          <path d="M223 266v13" fill="none" stroke="#f2dcb4" stroke-width="1.2" stroke-dasharray="2 4"/>
+          <path d="M162 294c23-5 41-1 61 10 20-11 38-15 61-10v43c-23-5-41-1-61 10-20-11-38-15-61-10z" fill="#142f68" stroke="#9dbbef" stroke-width="1.2" transform="translate(0 5)"/>
+          <path d="M164 287c21-5 42 0 59 11 17-11 38-16 59-11v44c-21-5-42 0-59 11-17-11-38-16-59-11z" fill="#f3e9d4" stroke="#f6edda" stroke-width="1.3" stroke-linejoin="round"/>
+          <path d="M223 298v44m-47-43c12-1 23 1 35 7m-35 2c12-1 23 1 35 7m-35 2c12-1 23 1 35 7m24-18c12-6 23-8 35-7m-35 16c12-6 23-8 35-7m-35 16c12-6 23-8 35-7" fill="none" stroke="#426497" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
