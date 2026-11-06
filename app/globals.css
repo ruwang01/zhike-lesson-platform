@@ -13,6 +13,8 @@
   --brand-frost:#f5f8fd;
   --brand-ink:#182f56;
   --brand-muted:#36557c;
+  --studio-blue-haze:#b7d0f8;
+  --studio-blue-edge:#759fe1;
 
   --text-body:1rem;
   --text-control:.9375rem;
@@ -2938,6 +2940,26 @@ main{max-width:1440px;margin:auto;padding:14px 44px 0;position:relative}
 .app-shell .design-wizard-next small{font-size:var(--text-small);text-align:start}
 .app-shell .knowledge-drawer{width:min(38rem,100%)}
 .app-shell .topbar>div{overflow-wrap:anywhere;min-width:0}
+
+/* Blue light shows through the workspace glass. Document views keep their paper surface. */
+.app-shell:not(.login-shell,.schedule-page,.paper-mode){
+  --glass-soft:linear-gradient(140deg,#ffffff62,#f0f6ff2e);
+  --glass-edge-dim:#ffffff8c;
+  --glass-shadow:0 1px 2px #15396e12,0 12px 32px #15396e1c;
+  background:
+    radial-gradient(ellipse at 67% 0%,#f6faffd9,transparent 62%),
+    radial-gradient(ellipse at 0% 26%,#92b7f0,transparent 50%),
+    linear-gradient(135deg,#edf5ff 0%,var(--studio-blue-haze) 58%,var(--studio-blue-edge) 100%);
+}
+.app-shell:not(.login-shell,.schedule-page,.paper-mode) .main-shell{
+  background:linear-gradient(125deg,#ffffff42,#ffffff14 55%,#eaf3ff52);
+  box-shadow:inset 0 1px 0 #ffffffa6;
+}
+.app-shell:not(.login-shell,.schedule-page,.paper-mode) .sidebar{
+  background:linear-gradient(155deg,#f1f7ff8c,#f1f7ff40 52%,#d9e8ff55);
+  box-shadow:inset -1px 0 0 #ffffffa6,4px 0 22px #15396e1a;
+}
+
 @media(max-width:64rem){
  .app-shell:not(.login-shell){grid-template-columns:minmax(0,1fr);padding-top:var(--workspace-header);height:100dvh}
  .app-shell .sidebar{position:fixed;top:0;left:0;width:100%;height:var(--workspace-header);padding:.5rem 1rem;display:flex;flex-direction:row;align-items:center;gap:.75rem;z-index:50}

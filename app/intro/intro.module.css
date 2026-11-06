@@ -1,8 +1,8 @@
 .page {
-  --intro-gutter: clamp(16px, 6.667vw, 96px);
+  --intro-gutter: clamp(16px, 3.5vw, 88px);
   display: flex;
   flex-direction: column;
-  min-block-size: 100svh;
+  min-block-size: 100dvh;
   color: var(--brand-ink);
   background: var(--brand-frost);
   font-family: 'PingFang SC', 'Microsoft YaHei', var(--font-sans);
@@ -10,7 +10,7 @@
 }
 
 .container {
-  width: min(calc(100% - 2 * var(--intro-gutter)), 1248px);
+  width: calc(100% - 2 * var(--intro-gutter));
   margin-inline: auto;
 }
 
@@ -22,11 +22,10 @@
 }
 .masthead {
   justify-content: space-between;
-  min-block-size: 88px;
-  padding-block: 12px;
+  padding-block: clamp(8px, 1.45svh, 16px);
 }
 .identity { min-inline-size: 0; }
-.universityLogo { width: min(220px, 30vw); height: auto; flex-shrink: 0; }
+.universityLogo { width: min(clamp(174px, 23svh, 220px), 30vw); height: auto; flex-shrink: 0; }
 .tagline {
   border-inline-start: 1px solid #cbd9ed;
   padding-inline-start: 24px;
@@ -42,10 +41,17 @@
 .link { font-size: .9375rem; }
 .link:hover { text-decoration: underline; text-underline-offset: .22em; }
 .page a:focus-visible { outline: 2px solid var(--brand-blue); outline-offset: 4px; }
+.main, .about {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-inline: 0;
+}
 .main {
   display: flex;
   flex: 1;
   flex-direction: column;
+  padding-block: 0;
   background: radial-gradient(ellipse at 82% 42%, var(--brand-blue-light), transparent 70%), var(--brand-blue);
   color: #fff;
 }
@@ -53,9 +59,9 @@
   display: grid;
   flex: 1;
   grid-template-columns: minmax(0, 47fr) minmax(0, 53fr);
-  gap: clamp(22px, 4.167vw, 60px);
+  gap: clamp(18px, 3vw, 64px);
   align-items: center;
-  padding-block: clamp(30px, 3.889vw, 56px);
+  padding-block: clamp(16px, 3.25svh, 56px);
 }
 .eyebrow {
   display: flex;
@@ -80,7 +86,10 @@
   font-weight: 600;
   line-height: 1.16;
 }
-.title { margin-block: 18px 24px; font-size: clamp(2rem, 5.14vw, 4.625rem); }
+.title {
+  margin-block: clamp(10px, 2svh, 20px) clamp(12px, 2.4svh, 26px);
+  font-size: clamp(2rem, min(5.4vw, 8.4svh), 5.5rem);
+}
 .title span { display: block; }
 .description {
   max-inline-size: 27em;
@@ -88,14 +97,16 @@
   font-size: clamp(1rem, 1.25vw, 1.125rem);
   line-height: 1.85;
 }
-.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin-block-start: 32px; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin-block-start: clamp(16px, 3.4svh, 34px); }
 .actions .link, .enter { font-size: 1rem; font-weight: 650; }
 .enter { min-block-size: 52px; padding: 10px 24px; border-radius: 4px; color: #172f58; background: #f3e3c3; }
 .enter:hover { background: #fff0d2; }
 .main a:focus-visible { outline-color: #f3e3c3; }
 .artwork {
   position: relative;
-  width: min(100%, 504px);
+  /* Reserve height for the masthead, feature row, and footer. */
+  --intro-chrome: clamp(20rem, 41svh, 24rem);
+  width: min(100%, 40rem, max(12rem, calc((100svh - var(--intro-chrome)) * 438 / 388)));
   margin: 0 auto;
   container-type: inline-size;
 }
@@ -140,12 +151,16 @@
 .features {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 20px;
-  padding-block-end: 16px;
+  gap: clamp(12px, 1.5vw, 24px);
+  padding-block-end: clamp(12px, 2.2svh, 24px);
 }
 .feature {
-  min-block-size: 165px;
-  padding: 18px 18px 20px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+  column-gap: clamp(10px, 1.25vw, 20px);
+  row-gap: 4px;
+  padding: clamp(12px, 2.4svh, 24px) clamp(12px, 1.6vw, 28px);
   border: 1px solid #b6d3ff57;
   border-radius: 16px;
   background: #dbeaff10;
@@ -153,9 +168,9 @@
 .featureIcon {
   display: grid;
   place-items: center;
+  grid-row: span 2;
   width: 36px;
   height: 36px;
-  margin-block-end: 9px;
   border-radius: 8px;
   background: #c5dcff25;
   color: #f3dbad;
@@ -167,31 +182,39 @@
   justify-content: center;
   align-items: center;
   gap: 9px;
-  min-block-size: 72px;
-  padding: 10px 16px;
+  padding: clamp(6px, 1.2svh, 12px) 16px;
   border-block-start: 1px solid #dbe4f2;
   color: var(--brand-muted);
   font-size: .875rem;
 }
-.collegeLogo { width: min(280px, 79vw); height: auto; }
-.about { flex: 1; padding-block: clamp(26px, 5vw, 72px); }
-.aboutEyebrow { margin-block: 42px 12px; color: var(--brand-muted); font-size: .9375rem; letter-spacing: .14em; }
+.collegeLogo { width: min(clamp(208px, 30svh, 280px), 79vw); height: auto; }
+.about { flex: 1; padding-block: clamp(24px, 5svh, 72px); }
+.aboutEyebrow { margin-block: clamp(18px, 4svh, 42px) 12px; color: var(--brand-muted); font-size: .9375rem; letter-spacing: .14em; }
 .about h1 { font-size: clamp(2.5rem, 4.45vw, 4rem); }
 .aboutDescription { margin-block-start: 22px; max-inline-size: 42em; color: var(--brand-muted); font-size: 1.125rem; line-height: 1.85; }
 .capabilities {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
-  margin-block-start: 42px;
+  margin-block-start: clamp(18px, 4svh, 42px);
 }
 .capabilities article { padding-block: 18px; border-block-start: 1px solid #cbd9ed; }
 .capabilities p { margin-block-start: 8px; color: var(--brand-muted); }
 
+@media (min-width: 801px) and (max-height: 720px) {
+  .hero { padding-block: 14px; }
+  .description { line-height: 1.65; }
+  .enter { min-block-size: 44px; padding-block: 8px; }
+  .feature { padding-block: 12px; }
+  .featureIcon { width: 30px; height: 30px; }
+  .feature h2 { font-size: 1.125rem; }
+  .feature p { font-size: .875rem; }
+}
 @media (max-width: 800px) {
   .masthead, .identity { gap: 12px; }
   .tagline { padding-inline-start: 12px; }
-  .features { gap: 12px; }
-  .feature { padding-inline: 12px; }
+  .feature { grid-template-columns: minmax(0, 1fr); }
+  .featureIcon { grid-row: auto; margin-block-end: 4px; }
 }
 @media (max-width: 559px) {
   .masthead { align-items: flex-start; }
@@ -200,9 +223,9 @@
   .tagline { flex-basis: 100%; padding: 0; border: 0; font-size: .75rem; }
   .masthead > .link { padding-block-start: 8px; }
   .hero { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .artwork { width: min(100%, 25rem); }
   .title { font-size: clamp(2.25rem, 8.5vw, 3.25rem); }
   .features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .feature { min-block-size: 0; }
   .capabilities { grid-template-columns: minmax(0, 1fr); gap: 0; }
 }
 @media (max-width: 300px) {
