@@ -1,15 +1,45 @@
 .page{
   --login-ink:var(--brand-ink);--login-muted:var(--brand-muted);--login-edge:rgba(var(--brand-blue-rgb),.30);
+  --login-sky:#b9d1f9;
   min-height:100svh;max-width:none;margin:0;padding:48px 48px 40px;position:relative;isolation:isolate;
   color:var(--login-ink);font-family:var(--font-sans);overflow-x:clip;
-  background:radial-gradient(ellipse at 94% 42%,var(--bg-c) 0%,transparent 58%),linear-gradient(115deg,var(--bg-a) 0%,var(--bg-b) 43%,var(--bg-c) 100%);
+  background:radial-gradient(ellipse at 94% 42%,#bed7ff 0%,transparent 58%),linear-gradient(115deg,var(--bg-a) 0%,var(--bg-b) 43%,var(--login-sky) 100%);
 }
 .stage{width:100%;max-width:1360px;min-height:calc(100svh - 88px);margin:auto;display:grid;grid-template-columns:minmax(0,1.45fr) minmax(350px,1fr);gap:clamp(32px,4vw,76px);align-items:center}
 .formPane{position:relative;min-width:0;padding:28px 0;z-index:1}
-.card{position:relative;width:100%;max-width:440px;margin:auto;padding:36px 36px 30px;border-radius:27px;background:linear-gradient(145deg,#ffffff30,#ffffff12);border:1px solid #ffffffd9;backdrop-filter:none;box-shadow:18px 26px 50px #182f561c,0 5px 14px #182f560b,inset 0 1px 0 #ffffffed,inset -2px -2px 1px #587fbc38}
-.card::before{content:'';position:absolute;inset:4px;border:1px solid #ffffff70;border-right-color:#587fbc30;border-bottom-color:#587fbc30;border-radius:23px;pointer-events:none}
+.card {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  margin: auto;
+  padding: 36px 36px 30px;
+  border: 1px solid #fffffff2;
+  border-radius: 27px;
+  background:
+    radial-gradient(ellipse at 12% 0%, #ffffff70, transparent 58%),
+    linear-gradient(130deg, #ffffff45, #ffffff14 48%, #ffffff2b);
+  -webkit-backdrop-filter: blur(16px) saturate(136%);
+  backdrop-filter: blur(16px) saturate(136%);
+  box-shadow:
+    22px 32px 48px #182f5630,
+    0 7px 14px #182f5614,
+    inset 2px 2px 4px #ffffffdb,
+    inset -3px -3px 5px #587fbc45;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 1px solid #ffffffd0;
+  border-right-color: #426eab69;
+  border-bottom-color: #426eab69;
+  border-radius: 22px;
+  box-shadow: 1px 1px 2px #ffffffdb, inset 1px 1px 3px #ffffff80;
+  pointer-events: none;
+}
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:28px}
-.brandMark{display:grid;place-items:center;width:36px;height:36px;border-radius:12px;color:var(--brand-blue);background:rgba(var(--brand-blue-rgb),0.086);border:1px solid rgba(var(--brand-blue-rgb),0.188)}
+.brandHome{display:inline-flex;align-items:center;gap:10px}
+.brandMark{display:grid;place-items:center;width:36px;height:36px;border-radius:12px;flex-shrink:0;color:var(--brand-blue);background:rgba(var(--brand-blue-rgb),0.086);border:1px solid rgba(var(--brand-blue-rgb),0.188)}
 .brandName{font-size:var(--text-section);font-weight:650;line-height:1.25;letter-spacing:.07em}
 .brandName small{display:block;margin-top:4px;font-size:var(--text-small);letter-spacing:.18em;color:var(--login-muted)}
 .heading{margin-bottom:28px}
@@ -38,7 +68,7 @@
 .globeShadow{position:absolute;left:19%;right:19%;bottom:6%;height:9%;border-radius:50%;background:#182f563d;filter:blur(19px);transform:scaleY(.7);pointer-events:none}
 .globe{position:absolute;inset:0;display:grid;place-items:center}
 .globe canvas{display:block;touch-action:pan-y!important;outline:none}
-.poster{position:absolute;width:80%;height:80%;border-radius:50%;background:radial-gradient(circle at 29% 26%,#ffffff25,transparent 52%,#071e3c99 100%),url('/login/earth-blue-marble.jpg') 76% 50%/240% 100%;box-shadow:inset 5px 3px 10px #ffffffa0,inset -18px -12px 32px #071e3c77}
+.poster{position:absolute;width:80%;height:80%;border-radius:50%;background:radial-gradient(circle at 29% 26%,#ffffff25,transparent 52%,#071e3c65 100%),url('/login/earth-blue-marble.jpg') 76% 50%/240% 100%;box-shadow:inset 5px 3px 10px #ffffffa0,inset -18px -12px 32px #071e3c55;filter:brightness(1.12) saturate(1.04)}
 .poster[hidden]{display:none}
 .places{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));row-gap:20px;width:100%;max-width:650px;padding:0 4px}
 .place{grid-column:span 2;min-height:64px;display:flex;flex-direction:column;gap:3px;padding:7px 3px;border-radius:12px;text-align:center;line-height:1.4;transition:background .18s}
@@ -55,10 +85,8 @@
 @media(max-width:440px){.page{padding:56px 20px 32px}.globeSpace{max-width:280px}.placeName{font-size:var(--text-small)}.time{font-size:var(--text-section)}.places{row-gap:10px}.place{padding:6px 0;min-height:60px}.card{padding:28px 24px 24px;border-radius:24px}.card::before{border-radius:20px}.heading h1{font-size:var(--text-title)}.brand{margin-bottom:24px}.subtitle{font-size:var(--text-small)}}
 @media(max-width:350px){.page{padding-right:16px;padding-left:16px}.globeSpace{max-width:250px}.places{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px;max-width:250px}.place,.place:nth-child(n){grid-column:auto}.place:last-child{grid-column:1/-1}.card{padding:26px 20px 22px}.heading h1{font-size:var(--text-title)}}
 @media(prefers-reduced-motion:reduce){.page button{transition:none}.submit:hover:not(:disabled){transform:none}}
-/* Clear glass: transparent centre, a refractive rim and a separated cast shadow. */
-.card{background:linear-gradient(125deg,#ffffff16 0%,#ffffff06 48%,#ffffff0d 100%);border:1px solid #ffffffd9;box-shadow:22px 32px 46px #182f5630,0 7px 14px #182f5614,inset 2px 2px 3px #ffffffb8,inset -3px -3px 4px #587fbc38}
-.card::before{inset:5px;border:1px solid #ffffffa6;border-right-color:#426eab61;border-bottom-color:#426eab61;box-shadow:1px 1px 2px #ffffffcc,inset 1px 1px 3px #ffffff70,inset -1px -1px 2px #ffffff9e;border-radius:22px;pointer-events:none}
-.card::after{content:'';position:absolute;inset:-1px;border-radius:inherit;padding:5px;pointer-events:none;background:linear-gradient(132deg,#fffffffa 0%,#ffffff33 16%,#9fbee999 32%,#ffffffed 48%,#587fbc77 65%,#ffffffd9 83%,#9fbee999 95%,#ffffffee 100%);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+/* A bright refractive rim over the translucent glass surface. */
+.card::after{content:'';position:absolute;inset:-1px;border-radius:inherit;padding:5px;pointer-events:none;background:linear-gradient(132deg,#ffffff 0%,#ffffff68 16%,#91b7ecaa 32%,#fffffff5 48%,#587fbc8a 65%,#ffffffed 83%,#9fbee9aa 95%,#ffffff 100%);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
 .field input{background:#ffffff29;border-color:#193e804d;box-shadow:inset 0 1px 2px #ffffff4d,0 1px 0 #ffffff73}
 @media(max-width:440px){.card::before{border-radius:19px}}
 /* Fit desktop login to the visible height without cropping the form or city list. */

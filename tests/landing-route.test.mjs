@@ -3,17 +3,18 @@ import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 const plugin={name:'route-components',setup(b){
  b.onResolve({filter:/account-workspace$/},()=>({path:'Home',namespace:'fixture'}));
- b.onResolve({filter:/login\/welcome-client$/},()=>({path:'Welcome',namespace:'fixture'}));
+ b.onResolve({filter:/^next\/image$/},()=>({path:'Image',namespace:'fixture'}));
+ b.onResolve({filter:/\.module\.css$/},()=>({path:'styles',namespace:'fixture'}));
  b.onResolve({filter:/lib\/auth$/},()=>({path:'auth',namespace:'fixture'}));
  b.onResolve({filter:/^next\/(headers|navigation)$/},args=>({path:args.path,namespace:'fixture'}));
- b.onLoad({filter:/.*/,namespace:'fixture'},args=>({contents:args.path==='auth'?`export const requireUser=async()=>{if(globalThis.__denySite)throw Error('unauthenticated');return {id:'site-user',username:'teacher',role:'admin'}};`:args.path==='next/headers'?`export const headers=async()=>new Headers();`:args.path==='next/navigation'?`export const redirect=path=>{throw Error('Redirect:'+path)};`:args.path==='Home'?`export function AccountWorkspace(){return null}`:`export default function ${args.path}(){return null}`,loader:'js'}));
+ b.onLoad({filter:/.*/,namespace:'fixture'},args=>({contents:args.path==='styles'?`export default {};`:args.path==='auth'?`export const requireUser=async()=>{if(globalThis.__denySite)throw Error('unauthenticated');return {id:'site-user',username:'teacher',role:'admin'}};`:args.path==='next/headers'?`export const headers=async()=>new Headers();`:args.path==='next/navigation'?`export const redirect=path=>{throw Error('Redirect:'+path)};`:args.path==='Home'?`export function AccountWorkspace(){return null}`:`export default function ${args.path}(){return null}`,loader:'js'}));
 }};
 const result=await build({stdin:{contents:"export {default as Page,generateMetadata} from './app/page.tsx';export {safeNext,LOGIN_KEY,setLoggedIn,clearLoggedIn} from './lib/login-gate.ts';export {WORKSPACE_URL,moduleTitles} from './lib/modules.ts';",resolveDir:process.cwd()},bundle:true,write:false,platform:'node',format:'esm',jsx:'automatic',plugins:[plugin]});
 const {Page,generateMetadata,safeNext,WORKSPACE_URL,moduleTitles,LOGIN_KEY,setLoggedIn,clearLoggedIn}=await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
 const props=searchParams=>({searchParams:Promise.resolve(searchParams)});
-test('bare-domain and tracking-link visits show the globe login page',async()=>{
+test('bare-domain and tracking-link visits show the platform introduction',async()=>{
  for(const params of [{},{utm_source:'link'},{m:'unknown'},{m:'constructor'},{m:['design','knowledge']}]){
-  const view=await Page(props(params));assert.equal(view.type.name,'Welcome');assert.equal((await generateMetadata(props(params))).title,'欢迎使用智课');
+  const view=await Page(props(params));assert.equal(view.type.name,'IntroLayout');assert.equal(view.props.children.type.name,'IntroPage');assert.equal((await generateMetadata(props(params))).title,'国际中文教育智能备课平台 · 智课');
  }
 });
 test('existing module and draft-resume links still render the workspace',async()=>{
@@ -22,11 +23,23 @@ test('existing module and draft-resume links still render the workspace',async()
  }
  assert.equal((await Page(props({m:'design',entry:'invalid'}))).props.entry,null);
 });
-test('landing page passes only a single next target to the unchanged login form',async()=>{
- assert.equal((await Page(props({next:'/schedule'}))).props.next,'/schedule');
- assert.equal((await Page(props({next:['/schedule','/preview']}))).props.next,undefined);
+function links(view){
+ if(Array.isArray(view))return view.flatMap(links);
+ if(!view?.props)return [];
+ return view.type==='a'?[view.props.href]:links(view.props.children);
+}
+async function introductionLinks(params){
+ const page=await Page(props(params));
+ const intro=page.props.children;
+ return links(await intro.type(intro.props));
+}
+test('introduction enters the existing login page and forwards only a single next target',async()=>{
+ assert.ok((await introductionLinks({})).includes('/login'));
+ assert.ok((await introductionLinks({next:'/schedule'})).includes('/login?next=%2Fschedule'));
+ assert.ok((await introductionLinks({next:['/schedule','/preview']})).includes('/login'));
+ assert.ok(!(await introductionLinks({})).includes('/register'));
 });
-test('login and guest entry default to the workspace and avoid landing-page loops',()=>{
+test('login defaults to the workspace and avoids landing-page loops',()=>{
  assert.equal(WORKSPACE_URL,'/?m=dashboard');
  for(const next of [null,undefined,[],['/schedule','/'], '', '/','/#section','/?utm_source=x','/?m=unknown','/?m=design&m=knowledge','/login','/login/','/login?next=/','/./login'])assert.equal(safeNext(next),WORKSPACE_URL,next);
 });

@@ -14,16 +14,18 @@ const features = [
   { title: '课程表', description: '查看课程安排。', Icon: CalendarDays },
 ];
 
-export default function IntroPage() {
+export default async function IntroPage({ searchParams }: { searchParams: Promise<{ next?: string | string[] }> }) {
+  const { next } = await searchParams;
+  const loginHref = typeof next === 'string' ? `/login?${new URLSearchParams({ next })}` : '/login';
   return (
     <main className={styles.main}>
       <section className={`${styles.container} ${styles.hero}`} aria-labelledby="intro-title">
         <div>
-          <p className={styles.eyebrow}>国际中文教育智能备课平台</p>
+          <a className={styles.eyebrow} href="/">国际中文教育智能备课平台</a>
           <h1 id="intro-title" className={styles.title}><span>智课有谱，</span><span>备课有路！</span></h1>
           <p className={styles.description}>开启你的教案智能生成之旅，基于知识图谱，让每一堂中文课有据可依，让每一次备课都事半功倍。</p>
           <div className={styles.actions}>
-            <a className={styles.enter} href="/register">进入系统 <ArrowUpRight aria-hidden="true" size={17} /></a>
+            <a className={styles.enter} href={loginHref}>进入系统 <ArrowUpRight aria-hidden="true" size={17} /></a>
             <a className={styles.link} href="/intro/about">认识我们 <ArrowUpRight aria-hidden="true" size={17} /></a>
           </div>
         </div>

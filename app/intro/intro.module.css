@@ -59,6 +59,7 @@
 }
 .eyebrow {
   display: flex;
+  width: fit-content;
   align-items: center;
   gap: 12px;
   color: #e8d7b5;

@@ -13,7 +13,7 @@ export default function AboutPage() {
   return (
     <main className={styles.about}>
       <div className={styles.container}>
-        <a className={styles.link} href="/intro"><ArrowLeft aria-hidden="true" size={17} /> 返回首页</a>
+        <a className={styles.link} href="/"><ArrowLeft aria-hidden="true" size={17} /> 返回首页</a>
         <p className={styles.aboutEyebrow}>平台简介</p>
         <h1>认识我们</h1>
         <p className={styles.aboutDescription}>这是一个面向国际中文教师的备课平台，依托国际中文教育知识图谱，把选取知识点、准备教学资源和安排上课放在同一个工作流程里。</p>

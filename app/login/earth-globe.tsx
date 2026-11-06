@@ -26,11 +26,11 @@ export default function EarthGlobe({size,place,onReady,onSelectPlace}:EarthGlobe
         #include <map_fragment>
         // Lift the very dark satellite ocean while keeping land and cloud texture detail.
         float ocean = smoothstep(1.05, 1.6, diffuseColor.b / (max(diffuseColor.r, diffuseColor.g) + 0.001));
-        diffuseColor.rgb = pow(diffuseColor.rgb, vec3(0.80)) * 1.20;
-        diffuseColor.rgb += ocean * vec3(0.012, 0.050, 0.100);
+        diffuseColor.rgb = pow(diffuseColor.rgb, vec3(0.74)) * 1.20;
+        diffuseColor.rgb += ocean * vec3(0.015, 0.057, 0.115);
       `);
     };
-    material.customProgramCacheKey=()=> 'login-daylight-ocean-v1';
+    material.customProgramCacheKey=()=> 'login-daylight-ocean-v2';
     return material;
   },[]);
   useEffect(()=>()=>{surface.map?.dispose();surface.bumpMap?.dispose();surface.dispose()},[surface]);
@@ -39,7 +39,7 @@ export default function EarthGlobe({size,place,onReady,onSelectPlace}:EarthGlobe
     const globe=globeRef.current;if(!globe||!ready)return;
     const renderer=globe.renderer(),controls=globe.controls(),scene=globe.scene();
     const sun=new THREE.DirectionalLight(0xffffff,1.7);sun.position.set(-3,1,4);
-    globe.lights([new THREE.AmbientLight(0xffffff,2.15),sun]);
+    globe.lights([new THREE.AmbientLight(0xffffff,2.28),sun]);
     renderer.toneMapping=THREE.NoToneMapping;renderer.setClearColor(0xffffff,0);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.75));
     controls.enableDamping=true;controls.dampingFactor=.08;
@@ -73,11 +73,11 @@ export default function EarthGlobe({size,place,onReady,onSelectPlace}:EarthGlobe
     <Globe ref={globeRef} width={size} height={size} backgroundColor="rgba(0,0,0,0)"
       globeImageUrl={EARTH_IMG} bumpImageUrl={BUMPS_IMG} onGlobeReady={loaded}
       globeMaterial={surface}
-      showAtmosphere atmosphereColor="#b4d9e4" atmosphereAltitude={.055}
+      showAtmosphere atmosphereColor="#c7defb" atmosphereAltitude={.055}
       showGraticules={false} animateIn={false}
       pointsData={points} pointLat="lat" pointLng="lng" pointAltitude={.018}
       pointRadius={point=>(point as LoginPlace).id===place.id ? .82 : .5}
-      pointColor={point=>(point as LoginPlace).id===place.id?'#087f71':'#f5fbfc'}
+      pointColor={point=>(point as LoginPlace).id===place.id?'#193e80':'#f5fbfc'}
       pointsTransitionDuration={0} pointLabel={()=>''}
       onPointClick={point=>onSelectPlace(point as LoginPlace)}
     />

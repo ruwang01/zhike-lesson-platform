@@ -96,9 +96,11 @@ export default function WelcomeClient({ next,register=false,setup=false }: { nex
         <section className={styles.formPane} aria-labelledby="login-heading">
           <div className={styles.card} data-login-card>
             <div className={styles.brand}>
-              <span className={styles.brandMark}><TongueIcon size={22}/></span>
-              <span className={styles.brandName}>智课<small>ZHÌKE STUDIO</small></span>
-              {!register && !setup && <a className={styles.introLink} href="/intro">平台说明 <span aria-hidden="true">↗</span></a>}
+              <a className={styles.brandHome} href="/" aria-label="智课，返回平台说明">
+                <span className={styles.brandMark}><TongueIcon size={22}/></span>
+                <span className={styles.brandName}>智课<small>ZHÌKE STUDIO</small></span>
+              </a>
+              {!register && !setup && <a className={styles.introLink} href="/">平台说明 <span aria-hidden="true">↗</span></a>}
             </div>
             <div className={styles.heading}>
               <p className={styles.eyebrow}>WELCOME TO ZHÌKE</p>
