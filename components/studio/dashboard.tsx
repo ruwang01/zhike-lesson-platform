@@ -90,7 +90,7 @@ export function BentoGrid({
               <span className="bento-logo-mark">智</span>
               <span className="bento-logo-text">
                 智课
-                <small>ZHÌKE STUDIO</small>
+                <small>ZHIKE STUDIO</small>
               </span>
             </span>
             <span className="bento-hero-index">WORKSPACE / 01</span>

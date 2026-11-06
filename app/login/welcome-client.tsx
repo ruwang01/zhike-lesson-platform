@@ -98,12 +98,12 @@ export default function WelcomeClient({ next,register=false,setup=false }: { nex
             <div className={styles.brand}>
               <a className={styles.brandHome} href="/" aria-label="智课，返回平台说明">
                 <span className={styles.brandMark}><TongueIcon size={22}/></span>
-                <span className={styles.brandName}>智课<small>ZHÌKE STUDIO</small></span>
+                <span className={styles.brandName}>智课<small>ZHIKE STUDIO</small></span>
               </a>
               {!register && !setup && <a className={styles.introLink} href="/">平台说明 <span aria-hidden="true">↗</span></a>}
             </div>
             <div className={styles.heading}>
-              <p className={styles.eyebrow}>WELCOME TO ZHÌKE</p>
+              <p className={styles.eyebrow}>WELCOME TO ZHIKE</p>
               <h1 id="login-heading">{setup?'设置管理员账户':register?'注册智课账户':'欢迎使用智课'}</h1>
               <p className={styles.subtitle}>{setup?'请使用私有初始化凭据，为 admin 设置独立密码。':register?'只需用户名与密码，无需手机号或邮箱。':'登录本站账户，查看和管理自己的教案。'}</p>
             </div>

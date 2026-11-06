@@ -34,7 +34,7 @@ import {
 /* ------------------------------------------------------------------ *
  * 课程表（排课系统）
  *
- * 视觉：全屏克莱因蓝 → 居中大圆角卡片（工程图纸风）→ 网格课表。
+ * 视觉：周次与说明在上方，周课表置于居中的玻璃面板内。
  * 交互：点格子 → 排课表单弹窗（教案 / 课型 / 时间 / 地点，均可留空）
  *       → 保存后格子回显主标题 + 副信息；点标题移出。
  * 数据：课表存 'zhike-schedule'，教案池读 'zhike-workspace'（只读）。
@@ -170,7 +170,7 @@ export default function ScheduleClient() {
       .map((e) => e.placedAt)
       .filter(Boolean)
       .sort();
-    return times.length ? times[times.length - 1] : new Date().toISOString();
+    return times.at(-1);
   }, [schedule]);
 
   return (
@@ -182,35 +182,33 @@ export default function ScheduleClient() {
             <CalendarDays size={24} />
           </span>
           <span>
-            智课<span className="brand-en">ZHÌKE STUDIO</span>
+            智课<span className="brand-en">ZHIKE STUDIO</span>
           </span>
         </a>
         <WorkspaceNav active="schedule"/>
         <div className="sidebar-bottom">
-          <span className="save-status">
-            <span className="green-dot" />
-            {saveFailed?'排课保存失败，请重试':'排课已保存'}
-          </span>
           <ProfileMenu/>
         </div>
       </aside>
 
-      {/* ==================== 核心卡片 ==================== */}
-      <div className="schedule-stage"><div className="schedule-date-toolbar"><h1>课程表 / 本周课程</h1><button className="secondary" onClick={()=>changeWeek(-1)}>上一周</button><span>{week} 起</span><button className="secondary" onClick={()=>changeWeek(1)}>下一周</button><button className="text-button" onClick={()=>{if(week!==mondayKey())setReady(false);setWeek(mondayKey());window.history.pushState(null,'','/schedule')}}>返回今天</button></div>{saveFailed&&<p role="alert" className="message error">排课保存失败，当前输入已保留。<button onClick={()=>setSaveFailed(!saveWeekSchedule(week,schedule))}>重试保存</button></p>}
-        <div className="schedule-card lg-surface">
-          {/* ---------- 顶部数据栏 ---------- */}
-          <div className="schedule-meta">
-            <span>档案库：系统归档</span>
-            <span className="schedule-meta-div">｜</span>
-            <span>系统状态：排课规划中</span>
-            <span className="schedule-meta-div">｜</span>
-            <span>最后更新：{formatMonth(lastUpdated)}</span>
-            <span className="schedule-meta-spacer" />
-            <span className="schedule-meta-count">
-              已排 {placedCount} / {DAYS.length * PERIODS.length} 节
-            </span>
+      <main className="schedule-stage">
+        <header className="schedule-heading">
+          <h1>课程表</h1>
+          <div className="schedule-date-toolbar" role="group" aria-label="切换周次">
+            <button className="secondary" onClick={()=>changeWeek(-1)}>上一周</button>
+            <span><time dateTime={week}>{week}</time> 起</span>
+            <button className="secondary" onClick={()=>changeWeek(1)}>下一周</button>
+            <button className="text-button" onClick={()=>{if(week!==mondayKey())setReady(false);setWeek(mondayKey());window.history.pushState(null,'','/schedule')}}>返回今天</button>
           </div>
-
+          <div className="schedule-meta">
+            <span className="schedule-meta-count">已排 {placedCount} / {DAYS.length * PERIODS.length} 节</span>
+            {lastUpdated && <span>最近安排于 {formatMonth(lastUpdated)}</span>}
+            {ready && !saveFailed && <span className="save-status" role="status"><span className="green-dot" />排课已保存</span>}
+          </div>
+          <p className="schedule-hint">点击空格排课，点击课程编辑，点击垃圾桶移出。课表保存在当前浏览器。</p>
+          {saveFailed && <p role="alert" className="message error">排课保存失败，当前输入已保留。<button onClick={()=>setSaveFailed(!saveWeekSchedule(week,schedule))}>重试保存</button></p>}
+        </header>
+        <div className="schedule-card lg-surface">
           {/* ---------- 课表网格 ---------- */}
           <div className="schedule-grid-wrap">
             <div
@@ -222,7 +220,7 @@ export default function ScheduleClient() {
               {/* 表头：星期一 → 星期日 */}
               <div className="schedule-row schedule-row-head" role="row">
                 <div className="schedule-corner" role="columnheader">
-                  <span className="schedule-corner-label">节次 / 星期</span>
+                  <span className="schedule-corner-label">节次</span>
                 </div>
                 {DAYS.map((day) => (
                   <div className="schedule-th" role="columnheader" key={day}>
@@ -313,14 +311,8 @@ export default function ScheduleClient() {
             </div>
           </div>
 
-          {/* ---------- 底部说明 ---------- */}
-          <div className="schedule-foot">
-            <span>
-              点击格子安排课程 · 点击教案名移出 · 排课数据保存在本浏览器
-            </span>
-          </div>
         </div>
-      </div>
+      </main>
 
       {/* ==================== 排课表单弹窗 ==================== */}
       {activeSlot && (
